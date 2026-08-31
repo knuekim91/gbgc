@@ -8,5 +8,5 @@
  * ───────────────────────────────────────────────────────────── */
 
 window.HUB_CONFIG = {
-  apiUrl: ''
+  apiUrl: 'https://script.google.com/macros/s/AKfycbxx1TO6zwoe3vHMqoB9f6Un9dXYdiEIZR46ClRP-Mw46iFAF8j0UCQLDNaZoL0eUZNj/exec'
 };
