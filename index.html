@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2937">
+<meta name="description" content="경북여상 부서별 공유시트·업무 링크를 한 곳에서 찾고 등록하는 웹앱">
+<title>경북여상 업무 허브</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🏫</span>
+      <div class="brand-text">
+        <strong id="siteTitle">경북여상 업무 허브</strong>
+        <span id="siteYear" class="muted">2026학년도</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="themeBtn" class="icon-btn" type="button" title="화면 밝기 전환" aria-label="화면 밝기 전환">◐</button>
+      <button id="authBtn" class="btn btn-ghost" type="button">로그인</button>
+    </div>
+  </div>
+
+  <div class="wrap searchrow">
+    <div class="search">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input id="q" type="search" placeholder="시트 이름, 부서로 검색  (단축키 /)" autocomplete="off" aria-label="검색">
+      <button id="qClear" class="search-clear" type="button" aria-label="검색어 지우기" hidden>✕</button>
+    </div>
+  </div>
+
+  <nav class="wrap chips" id="chips" aria-label="부서 필터"></nav>
+</header>
+
+<main class="wrap" id="main">
+  <p id="notice" class="notice" hidden></p>
+  <div id="state" class="state">불러오는 중…</div>
+  <div id="board" class="board"></div>
+</main>
+
+<footer class="wrap foot">
+  <p class="muted small">
+    데이터는 학교 구글시트에 저장됩니다 · 링크는 담당 부서 선생님만 수정할 수 있습니다
+  </p>
+</footer>
+
+<button id="fab" class="fab" type="button" hidden>＋ 링크 추가</button>
+
+<!-- 로그인 -->
+<dialog id="dlgLogin" class="dlg">
+  <form method="dialog" class="dlg-body" id="loginForm">
+    <h2>로그인</h2>
+    <p class="muted small">선생님 성함을 아이디로 사용합니다. 초기 비밀번호는 <code>2026</code> 입니다.</p>
+    <label>이름
+      <input name="name" required autocomplete="username" placeholder="예) 김나은">
+    </label>
+    <label>비밀번호
+      <input name="password" type="password" required autocomplete="current-password" value="">
+    </label>
+    <p class="err" data-err hidden></p>
+    <menu>
+      <button value="cancel" class="btn btn-ghost" type="submit" formnovalidate>취소</button>
+      <button value="ok" class="btn btn-primary">로그인</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- 링크 추가 / 수정 -->
+<dialog id="dlgLink" class="dlg">
+  <form method="dialog" class="dlg-body" id="linkForm">
+    <h2 id="linkFormTitle">링크 추가</h2>
+    <input type="hidden" name="id">
+    <label>부서
+      <select name="dept" required></select>
+    </label>
+    <label>제목
+      <input name="title" required placeholder="예) 2학기 봉사활동 명단 입력">
+    </label>
+    <label>링크 주소
+      <input name="url" type="url" required placeholder="구글시트 주소를 붙여넣으세요"
+             inputmode="url" autocomplete="off">
+      <span class="hint" id="urlHint"></span>
+    </label>
+    <div class="row2">
+      <label><span class="lbl">마감일 <span class="muted">(선택)</span></span>
+        <input name="deadline" type="date">
+      </label>
+      <label><span class="lbl">메모 <span class="muted">(선택)</span></span>
+        <input name="note" placeholder="예) 담임 선생님만">
+      </label>
+    </div>
+    <p class="err" data-err hidden></p>
+    <menu>
+      <button value="cancel" class="btn btn-ghost" type="submit" formnovalidate>취소</button>
+      <button value="ok" class="btn btn-primary">저장</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- 내 계정 -->
+<dialog id="dlgAccount" class="dlg">
+  <div class="dlg-body">
+    <h2>내 계정</h2>
+    <dl class="kv">
+      <dt>이름</dt><dd id="acctName">-</dd>
+      <dt>권한</dt><dd id="acctRole">-</dd>
+      <dt>담당 부서</dt><dd id="acctDept">-</dd>
+    </dl>
+
+    <form id="pwForm" class="stack">
+      <h3>비밀번호 변경</h3>
+      <label>현재 비밀번호 <input name="current" type="password" required autocomplete="current-password"></label>
+      <label>새 비밀번호 <input name="next" type="password" required minlength="4" autocomplete="new-password"></label>
+      <label>새 비밀번호 확인 <input name="confirm" type="password" required minlength="4" autocomplete="new-password"></label>
+      <p class="err" data-err hidden></p>
+      <button class="btn btn-primary" type="submit">비밀번호 변경</button>
+    </form>
+
+    <div id="adminPane" hidden>
+      <h3>사용자 관리 <span class="muted small">(관리자)</span></h3>
+      <form id="userForm" class="userform">
+        <input name="name" placeholder="선생님 이름" required>
+        <select name="dept"></select>
+        <select name="role">
+          <option value="teacher">부서 담당</option>
+          <option value="admin">관리자</option>
+        </select>
+        <button class="btn btn-primary" type="submit">추가/수정</button>
+      </form>
+      <p class="hint">부서를 여러 개 맡으시면 쉼표로 구분해 <code>users</code> 시트에서 직접 입력하셔도 됩니다.</p>
+      <div id="userList" class="userlist"></div>
+    </div>
+
+    <menu>
+      <button class="btn btn-ghost" id="logoutBtn" type="button">로그아웃</button>
+      <button class="btn" id="acctClose" type="button">닫기</button>
+    </menu>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

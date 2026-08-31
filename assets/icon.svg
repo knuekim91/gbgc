@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="경북여상 업무 허브">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b74f7"/>
+      <stop offset="1" stop-color="#2246b5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <!-- 가운데 허브 노드와 이를 둘러싼 부서 노드들 -->
+  <g stroke="#ffffff" stroke-width="18" stroke-linecap="round" opacity=".92">
+    <line x1="256" y1="256" x2="256" y2="140"/>
+    <line x1="256" y1="256" x2="356" y2="314"/>
+    <line x1="256" y1="256" x2="156" y2="314"/>
+  </g>
+  <circle cx="256" cy="256" r="46" fill="#ffffff"/>
+  <circle cx="256" cy="140" r="34" fill="#ffffff" opacity=".95"/>
+  <circle cx="356" cy="314" r="34" fill="#ffffff" opacity=".95"/>
+  <circle cx="156" cy="314" r="34" fill="#ffffff" opacity=".95"/>
+</svg>
