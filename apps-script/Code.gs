@@ -188,8 +188,10 @@ function actSaveLink(req) {
   var title = String(link.title || '').trim();
   var url   = String(link.url || '').trim();
   if (!title) throw new Error('제목을 입력해 주세요.');
-  if (!url)   throw new Error('링크 주소를 입력해 주세요.');
-  if (!/^https?:\/\//i.test(url)) throw new Error('링크는 http:// 또는 https:// 로 시작해야 합니다.');
+  // 링크 주소는 선택입니다. 적었다면 형식만 확인합니다.
+  if (url && !/^https?:\/\//i.test(url)) {
+    throw new Error('링크는 http:// 또는 https:// 로 시작해야 합니다.');
+  }
 
   var sh = sheet(SHEET_LINKS);
   var rows = readSheet(sh, LINK_COLS);
@@ -597,6 +599,7 @@ function nextSort(rows, dept) {
 }
 
 function detectType(url) {
+  if (!String(url || '').trim()) return 'task';   // 링크 없는 업무
   if (/docs\.google\.com\/spreadsheets/i.test(url)) return 'sheet';
   if (/docs\.google\.com\/forms|forms\.gle/i.test(url)) return 'form';
   if (/docs\.google\.com\/document/i.test(url)) return 'doc';

@@ -32,7 +32,7 @@
   <div class="wrap searchrow">
     <div class="search">
       <span class="search-icon" aria-hidden="true">🔍</span>
-      <input id="q" type="search" placeholder="시트 이름, 부서로 검색  (단축키 /)" autocomplete="off" aria-label="검색">
+      <input id="q" type="search" placeholder="업무, 부서로 검색  (단축키 /)" autocomplete="off" aria-label="검색">
       <button id="qClear" class="search-clear" type="button" aria-label="검색어 지우기" hidden>✕</button>
     </div>
   </div>
@@ -48,11 +48,11 @@
 
 <footer class="wrap foot">
   <p class="muted small">
-    데이터는 학교 구글시트에 저장됩니다 · 링크는 담당 부서 선생님만 수정할 수 있습니다
+    데이터는 학교 구글시트에 저장됩니다 · 업무는 담당 부서 선생님만 수정할 수 있습니다
   </p>
 </footer>
 
-<button id="fab" class="fab" type="button" hidden>＋ 링크 추가</button>
+<button id="fab" class="fab" type="button" hidden>＋ 업무 추가</button>
 
 <!-- 로그인 -->
 <dialog id="dlgLogin" class="dlg">
@@ -73,10 +73,10 @@
   </form>
 </dialog>
 
-<!-- 링크 추가 / 수정 -->
+<!-- 업무 추가 / 수정 -->
 <dialog id="dlgLink" class="dlg">
   <form method="dialog" class="dlg-body" id="linkForm">
-    <h2 id="linkFormTitle">링크 추가</h2>
+    <h2 id="linkFormTitle">업무 추가</h2>
     <input type="hidden" name="id">
     <label>부서
       <select name="dept" required></select>
@@ -84,8 +84,8 @@
     <label>제목
       <input name="title" required placeholder="예) 2학기 봉사활동 명단 입력">
     </label>
-    <label>링크 주소
-      <input name="url" type="url" required placeholder="구글시트 주소를 붙여넣으세요"
+    <label><span class="lbl">링크 주소 <span class="muted">(선택)</span></span>
+      <input name="url" type="url" placeholder="구글시트 주소를 붙여넣으세요 · 없으면 비워 두세요"
              inputmode="url" autocomplete="off">
       <span class="hint" id="urlHint"></span>
     </label>
@@ -139,7 +139,7 @@
     <h3>빠른 등록 도구</h3>
     <p class="hint">
       아래 버튼을 브라우저 <b>즐겨찾기 바로 끌어다 놓으세요.</b>
-      구글시트를 보다가 그 버튼을 누르면 제목과 주소가 채워진 등록창이 바로 열립니다.
+      구글시트를 보다가 그 버튼을 누르면 제목과 주소가 채워진 업무 추가 창이 바로 열립니다.
     </p>
     <a id="bookmarklet" class="btn bookmarklet" href="#" draggable="true">＋ 허브에 등록</a>
 

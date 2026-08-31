@@ -75,10 +75,11 @@
 
   var TYPE_ICON = {
     sheet: '📊', form: '📝', doc: '📄', slide: '📽️',
-    drive: '📁', notion: '🗂️', link: '🔗'
+    drive: '📁', notion: '🗂️', link: '🔗', task: '📌'
   };
 
   function detectType(url) {
+    if (!String(url || '').trim()) return 'task';   // 링크 없는 업무
     if (/docs\.google\.com\/spreadsheets/i.test(url)) return 'sheet';
     if (/docs\.google\.com\/forms|forms\.gle/i.test(url)) return 'form';
     if (/docs\.google\.com\/document/i.test(url)) return 'doc';
@@ -90,7 +91,7 @@
 
   var TYPE_LABEL = {
     sheet: '구글시트', form: '구글폼', doc: '구글문서', slide: '구글슬라이드',
-    drive: '드라이브', notion: '노션 페이지', link: '웹 페이지'
+    drive: '드라이브', notion: '노션 페이지', link: '웹 페이지', task: '링크 없는 업무'
   };
 
   // 시각이 아니라 날짜(자정 기준)로 비교해야 "오늘 마감"이 D-1 로 보이지 않습니다.
@@ -216,7 +217,7 @@
       stateEl.className = 'state';
       stateEl.textContent = state.q
         ? '"' + state.q + '" 검색 결과가 없습니다.'
-        : (state.filter === 'fav' ? '즐겨찾기한 링크가 없습니다. 링크 옆 ☆ 를 눌러 추가해 보세요.'
+        : (state.filter === 'fav' ? '즐겨찾기한 업무가 없습니다. 업무 옆 ☆ 를 눌러 추가해 보세요.'
         : state.filter === 'due' ? '2주 이내 마감인 항목이 없습니다.'
         : '표시할 링크가 없습니다.');
       stateEl.hidden = false;
@@ -234,11 +235,11 @@
           '<button class="share" type="button" data-share="' + esc(g.dept) +
             '" title="' + esc(g.dept) + ' 전용 주소 복사" aria-label="' + esc(g.dept) + ' 전용 주소 복사">🔗</button>' +
           (editable ? '<button class="add" type="button" data-add="' + esc(g.dept) +
-                      '" title="' + esc(g.dept) + '에 링크 추가" aria-label="' + esc(g.dept) + '에 링크 추가">＋</button>' : '') +
+                      '" title="' + esc(g.dept) + '에 업무 추가" aria-label="' + esc(g.dept) + '에 업무 추가">＋</button>' : '') +
         '</div>' +
         (g.items.length
           ? '<ul class="items">' + g.items.map(function (l) { return itemHtml(l, fav, editable); }).join('') + '</ul>'
-          : '<p class="empty-dept">아직 등록된 링크가 없습니다. ＋ 를 눌러 추가해 주세요.</p>') +
+          : '<p class="empty-dept">아직 등록된 업무가 없습니다. ＋ 를 눌러 추가해 주세요.</p>') +
       '</section>';
     }).join('');
   }
@@ -265,10 +266,15 @@
     var starred = fav.indexOf(l.id) >= 0;
     var showDept = state.filter === 'fav' || state.filter === 'due' || !!state.q;
 
+    // 링크가 없는 업무는 누를 곳이 없으므로 글자로만 보여 줍니다.
+    var titleHtml = l.url
+      ? '<a class="item-link" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.title) + '</a>'
+      : '<span class="item-text">' + esc(l.title) + '</span>';
+
     return '<li class="item" data-id="' + esc(l.id) + '">' +
       '<span class="item-icon" title="' + esc(TYPE_LABEL[type] || '링크') + '">' + (TYPE_ICON[type] || '🔗') + '</span>' +
       '<div class="item-main">' +
-        '<a class="item-link" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.title) + '</a>' +
+        titleHtml +
         '<div class="item-meta">' +
           (showDept ? '<span class="tag dept" style="--dept:' + deptColor(l.dept) + '">' + esc(l.dept) + '</span>' : '') +
           deadlineTag(l.deadline) +
@@ -279,7 +285,7 @@
       '<div class="item-tools">' +
         '<button class="tool star' + (starred ? ' on' : '') + '" type="button" data-star="' + esc(l.id) +
           '" aria-label="즐겨찾기">' + (starred ? '★' : '☆') + '</button>' +
-        '<button class="tool" type="button" data-copy="' + esc(l.id) + '" aria-label="주소 복사">⧉</button>' +
+        (l.url ? '<button class="tool" type="button" data-copy="' + esc(l.id) + '" aria-label="주소 복사">⧉</button>' : '') +
         (editable
           ? '<button class="tool" type="button" data-edit="' + esc(l.id) + '" aria-label="수정">✎</button>' +
             '<button class="tool" type="button" data-del="' + esc(l.id) + '" aria-label="삭제">🗑</button>'
@@ -373,7 +379,7 @@
       id: '', dept: myDepts()[0] || '', title: seed.title || '',
       url: seed.url || '', deadline: '', note: '', track: '', target: ''
     });
-    $('#linkFormTitle').textContent = '링크 추가';
+    $('#linkFormTitle').textContent = '업무 추가';
   }
 
   function handleQuickAdd() {
@@ -471,7 +477,7 @@
     if ((el = e.target.closest('[data-del]'))) {
       var target = state.links.filter(function (l) { return l.id === el.dataset.del; })[0];
       if (!target) return;
-      if (!confirm('"' + target.title + '" 링크를 목록에서 지울까요?\n(구글시트 원본은 삭제되지 않습니다)')) return;
+      if (!confirm('"' + target.title + '" 업무를 목록에서 지울까요?\n(연결된 구글시트 원본은 삭제되지 않습니다)')) return;
       api('deleteLink', { id: target.id }).then(function (d) {
         state.links = d.links; renderAll(); toast('삭제했습니다');
       }).catch(function (err) { toast(err.message, true); });
@@ -522,7 +528,7 @@
     });
   });
 
-  // 링크 추가 / 수정
+  // 업무 추가 / 수정
   $('#fab').addEventListener('click', function () { openLinkForm(null, myDepts()[0]); });
 
   function openLinkForm(link, dept) {
@@ -535,7 +541,7 @@
     }).join('');
 
     if (link) {
-      $('#linkFormTitle').textContent = '링크 수정';
+      $('#linkFormTitle').textContent = '업무 수정';
       f.id.value = link.id;
       f.dept.value = link.dept;
       f.title.value = link.title;
@@ -546,11 +552,12 @@
       f.target.value = link.target || '';
       hintFor(link.url);
     } else {
-      $('#linkFormTitle').textContent = '링크 추가';
+      $('#linkFormTitle').textContent = '업무 추가';
       f.id.value = '';
       if (dept && allowed.indexOf(dept) >= 0) f.dept.value = dept;
     }
     syncTrackBox();
+    hintFor(f.url.value);
     if (!$('#dlgLink').open) $('#dlgLink').showModal();
     setTimeout(function () { (link ? f.title : f.url).focus(); }, 40);
   }
@@ -564,7 +571,10 @@
 
   function hintFor(url) {
     var hint = $('#urlHint');
-    if (!url) { hint.textContent = ''; return; }
+    if (!String(url || '').trim()) {
+      hint.textContent = '📌 링크 없이 업무만 등록됩니다';
+      return;
+    }
     var t = detectType(url);
     hint.textContent = (TYPE_ICON[t] || '🔗') + ' ' + (TYPE_LABEL[t] || '웹 페이지') + ' 링크로 등록됩니다';
   }
@@ -584,7 +594,7 @@
       state.links = d.links;
       $('#dlgLink').close();
       renderAll();
-      toast(f.id.value ? '수정했습니다' : '링크를 추가했습니다');
+      toast(f.id.value ? '수정했습니다' : '업무를 추가했습니다');
       loadProgress();
     }).catch(function (err) { showErr(f, err.message); });
   });

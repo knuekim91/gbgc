@@ -259,6 +259,12 @@ code {
   display: block; overflow-wrap: anywhere;
 }
 .item-link:hover { color: var(--accent); text-decoration: underline; }
+
+/* 링크 없이 제목만 있는 업무 */
+.item-text {
+  color: var(--ink); font-weight: 500; font-size: 13.8px;
+  display: block; overflow-wrap: anywhere;
+}
 .item-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 3px; }
 
 .tag {
