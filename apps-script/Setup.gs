@@ -95,14 +95,15 @@ var SEED = [
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('경북여상 허브')
-    .addItem('1. 초기 설치 (시트 생성 + 링크 이전)', 'installHub')
-    .addItem('2. 관리자 계정 추가', 'addAdminAccount')
+    .addItem('1. 초기 설치 (시트 생성 + 링크 이전)', 'installHubFromMenu')
+    .addItem('2. 관리자 계정 추가', 'addAdminAccountFromMenu')
+    .addItem('설치 상태 확인', 'checkSetupFromMenu')
     .addSeparator()
     .addItem('마감 알림 미리보기', 'previewReminders')
     .addItem('마감 알림 자동 발송 켜기', 'enableReminderTrigger')
     .addItem('마감 알림 자동 발송 끄기', 'disableReminderTrigger')
     .addSeparator()
-    .addItem('시트 열 최신화', 'migrateColumns')
+    .addItem('시트 열 최신화', 'migrateColumnsFromMenu')
     .addItem('부서 목록 기본값으로 되돌리기', 'resetDepts')
     .addToUi();
 }
@@ -115,21 +116,65 @@ function migrateColumns() {
   say('완료', '시트 열을 최신 상태로 맞췄습니다.');
 }
 
-/**
- * 스프레드시트 메뉴가 뜨지 않을 때는 Apps Script 편집기에서
- * 함수 목록에서 installHub 를 골라 [실행] 해도 똑같이 동작합니다.
- * 그래서 화면(UI)이 없어도 죽지 않도록 만들어 두었습니다.
- */
+function checkSetupFromMenu() {
+  var text = checkSetup();
+  var ui = uiOrNull();
+  if (ui) ui.alert('설치 상태', text, ui.ButtonSet.OK);
+}
+
 function uiOrNull() {
   try { return SpreadsheetApp.getUi(); } catch (err) { return null; }
 }
 
+/**
+ * 알림창은 "메뉴에서 실행했을 때만" 띄웁니다.
+ *
+ * 편집기에서 실행할 때 ui.alert() 를 부르면 대화상자가 스프레드시트 탭에 뜨고,
+ * 편집기는 그 창을 누를 때까지 계속 "실행 중"으로 멈춰 버립니다.
+ * 그래서 아래 설치 함수들은 UI를 전혀 건드리지 않고 로그만 남깁니다.
+ */
 function say(title, message) {
-  var ui = uiOrNull();
-  if (ui) ui.alert(title, message, ui.ButtonSet.OK);
   Logger.log('[' + title + '] ' + message);
 }
 
+/** 메뉴에서 부르는 입구 — 여기서만 알림창을 띄웁니다. */
+function installHubFromMenu() {
+  var summary = installHub();
+  var ui = uiOrNull();
+  if (ui) ui.alert('설치 완료', summary, ui.ButtonSet.OK);
+}
+
+function migrateColumnsFromMenu() {
+  migrateColumns();
+  var ui = uiOrNull();
+  if (ui) ui.alert('완료', '시트 열을 최신 상태로 맞췄습니다.', ui.ButtonSet.OK);
+}
+
+/**
+ * 설치 상태를 로그로 보여 줍니다. 알림창을 띄우지 않으므로
+ * 편집기에서 실행해도 멈추지 않습니다. (실행 기록에서 결과 확인)
+ */
+function checkSetup() {
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+  var out = [];
+  [SHEET_LINKS, SHEET_USERS, SHEET_CONFIG].forEach(function (n) {
+    var sh = book.getSheetByName(n);
+    out.push(n + ' 시트: ' + (sh ? (sh.getLastRow() - 1) + '행' : '없음'));
+  });
+  var users = book.getSheetByName(SHEET_USERS)
+    ? readSheet(sheet(SHEET_USERS), USER_COLS).map(function (u) {
+        return u.name + '(' + (u.role === 'admin' ? '관리자' : (u.dept || '부서없음')) + ')';
+      })
+    : [];
+  out.push('등록된 사용자: ' + (users.length ? users.join(', ') : '없음'));
+  out.push('ADMIN_NAME 설정값: ' + (String(ADMIN_NAME || '').trim() || '(비어 있음)'));
+
+  var text = out.join('\n');
+  Logger.log(text);
+  return text;
+}
+
+/** 설치 본체 — 알림창을 띄우지 않습니다. 결과는 문자열로 돌려줍니다. */
 function installHub() {
   var book = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -177,9 +222,10 @@ function installHub() {
                 'Setup 파일 맨 위 ADMIN_NAME 에 성함을 적고 installHub 를 다시 실행해 주세요.';
   }
 
-  say('설치 완료',
-    (moved > 0 ? 'Notion에서 링크 ' + moved + '건을 옮겨 담았습니다.'
-               : 'links 시트에 이미 데이터가 있어 초기 링크는 넣지 않았습니다.') + adminNote);
+  var summary = (moved > 0 ? 'Notion에서 링크 ' + moved + '건을 옮겨 담았습니다.'
+                           : 'links 시트에 이미 데이터가 있어 초기 링크는 넣지 않았습니다.') + adminNote;
+  say('설치 완료', summary);
+  return summary;
 }
 
 /** 이름 하나를 관리자로 등록합니다. (이미 있으면 관리자 권한만 부여) */
@@ -196,17 +242,20 @@ function registerAdmin(name) {
   return name;
 }
 
+/** 편집기에서 실행하는 용도 — 입력창을 띄우지 않고 ADMIN_NAME 을 씁니다. */
 function addAdminAccount() {
-  var ui = uiOrNull();
+  var preset = String(ADMIN_NAME || '').trim();
+  if (!preset) throw new Error('Setup 파일 맨 위 ADMIN_NAME 에 성함을 적고 다시 실행해 주세요.');
+  registerAdmin(preset);
+  var msg = preset + ' 님을 관리자로 등록했습니다. 초기 비밀번호: ' + DEFAULT_PASSWORD;
+  say('완료', msg);
+  return msg;
+}
 
-  // 편집기에서 직접 실행한 경우에는 입력창을 띄울 수 없으므로 ADMIN_NAME 을 씁니다.
-  if (!ui) {
-    var preset = String(ADMIN_NAME || '').trim();
-    if (!preset) throw new Error('Setup 파일 맨 위 ADMIN_NAME 에 성함을 적고 다시 실행해 주세요.');
-    registerAdmin(preset);
-    say('완료', preset + ' 님을 관리자로 등록했습니다. 초기 비밀번호: ' + DEFAULT_PASSWORD);
-    return;
-  }
+/** 메뉴에서 부르는 입구 — 이름을 물어봅니다. */
+function addAdminAccountFromMenu() {
+  var ui = uiOrNull();
+  if (!ui) return addAdminAccount();
 
   var res = ui.prompt('관리자 계정 추가',
     '관리자로 등록할 선생님 이름을 입력해 주세요.\n(초기 비밀번호는 ' + DEFAULT_PASSWORD + ' 입니다)',
@@ -217,8 +266,10 @@ function addAdminAccount() {
   if (!name) return;
 
   registerAdmin(name);
-  say('완료', name + ' 님을 관리자로 등록했습니다.\n초기 비밀번호: ' + DEFAULT_PASSWORD +
-      '\n\n첫 로그인 후 비밀번호를 꼭 변경해 주세요.');
+  var msg = name + ' 님을 관리자로 등록했습니다.\n초기 비밀번호: ' + DEFAULT_PASSWORD +
+            '\n\n첫 로그인 후 비밀번호를 꼭 변경해 주세요.';
+  say('완료', msg);
+  ui.alert('완료', msg, ui.ButtonSet.OK);
 }
 
 function resetDepts() {
