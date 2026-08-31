@@ -7,6 +7,13 @@
  *   - 부서 목록 다시 채우기 : config 시트의 부서 목록을 기본값으로 되돌립니다.
  */
 
+/**
+ * 관리자로 등록할 선생님 성함.
+ * 여기에 이름을 적어 두면 installHub 를 실행할 때 관리자 계정까지 한 번에 만들어집니다.
+ * (초기 비밀번호는 2026)
+ */
+var ADMIN_NAME = '';
+
 var DEPTS = [
   '교무부', '연구부', '학생부', '진로창체부', '기본학력방과후부', '복지상담부',
   '특성화교육과정부', '산학협력부', '전문교육부', '인성학부모부', '수평공동체',
@@ -105,11 +112,25 @@ function migrateColumns() {
   var book = SpreadsheetApp.getActiveSpreadsheet();
   ensureSheet(book, SHEET_LINKS, LINK_COLS);
   ensureSheet(book, SHEET_USERS, USER_COLS);
-  SpreadsheetApp.getUi().alert('완료', '시트 열을 최신 상태로 맞췄습니다.', SpreadsheetApp.getUi().ButtonSet.OK);
+  say('완료', '시트 열을 최신 상태로 맞췄습니다.');
+}
+
+/**
+ * 스프레드시트 메뉴가 뜨지 않을 때는 Apps Script 편집기에서
+ * 함수 목록에서 installHub 를 골라 [실행] 해도 똑같이 동작합니다.
+ * 그래서 화면(UI)이 없어도 죽지 않도록 만들어 두었습니다.
+ */
+function uiOrNull() {
+  try { return SpreadsheetApp.getUi(); } catch (err) { return null; }
+}
+
+function say(title, message) {
+  var ui = uiOrNull();
+  if (ui) ui.alert(title, message, ui.ButtonSet.OK);
+  Logger.log('[' + title + '] ' + message);
 }
 
 function installHub() {
-  var ui = SpreadsheetApp.getUi();
   var book = SpreadsheetApp.getActiveSpreadsheet();
 
   ensureSheet(book, SHEET_LINKS, LINK_COLS);
@@ -128,6 +149,7 @@ function installHub() {
     ]);
   }
 
+  var moved = 0;
   var links = book.getSheetByName(SHEET_LINKS);
   if (links.getLastRow() < 2) {
     var counter = {};
@@ -139,29 +161,64 @@ function installHub() {
       ];
     });
     links.getRange(2, 1, rows.length, LINK_COLS.length).setValues(rows);
-    ui.alert('설치 완료', 'Notion에서 링크 ' + rows.length + '건을 옮겨 담았습니다.\n\n다음으로 [경북여상 허브 > 2. 관리자 계정 추가]를 실행해 주세요.', ui.ButtonSet.OK);
-  } else {
-    ui.alert('설치 완료', 'links 시트에 이미 데이터가 있어 초기 링크는 넣지 않았습니다.', ui.ButtonSet.OK);
+    moved = rows.length;
   }
 
   book.setSpreadsheetTimeZone('Asia/Seoul');
+
+  // ADMIN_NAME 을 적어 두었다면 관리자 계정까지 여기서 만듭니다.
+  var adminNote = '';
+  var name = String(ADMIN_NAME || '').trim();
+  if (name) {
+    registerAdmin(name);
+    adminNote = '\n관리자 계정: ' + name + ' (초기 비밀번호 ' + DEFAULT_PASSWORD + ')';
+  } else {
+    adminNote = '\n\n다음으로 [경북여상 허브 > 2. 관리자 계정 추가] 를 실행하거나,\n' +
+                'Setup 파일 맨 위 ADMIN_NAME 에 성함을 적고 installHub 를 다시 실행해 주세요.';
+  }
+
+  say('설치 완료',
+    (moved > 0 ? 'Notion에서 링크 ' + moved + '건을 옮겨 담았습니다.'
+               : 'links 시트에 이미 데이터가 있어 초기 링크는 넣지 않았습니다.') + adminNote);
+}
+
+/** 이름 하나를 관리자로 등록합니다. (이미 있으면 관리자 권한만 부여) */
+function registerAdmin(name) {
+  name = String(name || '').trim();
+  if (!name) throw new Error('이름이 비어 있습니다.');
+
+  if (findUser(name)) {
+    updateUserRow(name, { role: 'admin', dept: '', updatedAt: now() });
+  } else {
+    var salt = newSalt();
+    sheet(SHEET_USERS).appendRow([name, '', 'admin', salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), '']);
+  }
+  return name;
 }
 
 function addAdminAccount() {
-  var ui = SpreadsheetApp.getUi();
-  var res = ui.prompt('관리자 계정 추가', '관리자로 등록할 선생님 이름을 입력해 주세요.\n(초기 비밀번호는 ' + DEFAULT_PASSWORD + ' 입니다)', ui.ButtonSet.OK_CANCEL);
+  var ui = uiOrNull();
+
+  // 편집기에서 직접 실행한 경우에는 입력창을 띄울 수 없으므로 ADMIN_NAME 을 씁니다.
+  if (!ui) {
+    var preset = String(ADMIN_NAME || '').trim();
+    if (!preset) throw new Error('Setup 파일 맨 위 ADMIN_NAME 에 성함을 적고 다시 실행해 주세요.');
+    registerAdmin(preset);
+    say('완료', preset + ' 님을 관리자로 등록했습니다. 초기 비밀번호: ' + DEFAULT_PASSWORD);
+    return;
+  }
+
+  var res = ui.prompt('관리자 계정 추가',
+    '관리자로 등록할 선생님 이름을 입력해 주세요.\n(초기 비밀번호는 ' + DEFAULT_PASSWORD + ' 입니다)',
+    ui.ButtonSet.OK_CANCEL);
   if (res.getSelectedButton() !== ui.Button.OK) return;
 
   var name = res.getResponseText().trim();
   if (!name) return;
 
-  var salt = newSalt();
-  if (findUser(name)) {
-    updateUserRow(name, { role: 'admin', dept: '', updatedAt: now() });
-  } else {
-    sheet(SHEET_USERS).appendRow([name, '', 'admin', salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), '']);
-  }
-  ui.alert('완료', name + ' 님을 관리자로 등록했습니다.\n초기 비밀번호: ' + DEFAULT_PASSWORD + '\n\n첫 로그인 후 비밀번호를 꼭 변경해 주세요.', ui.ButtonSet.OK);
+  registerAdmin(name);
+  say('완료', name + ' 님을 관리자로 등록했습니다.\n초기 비밀번호: ' + DEFAULT_PASSWORD +
+      '\n\n첫 로그인 후 비밀번호를 꼭 변경해 주세요.');
 }
 
 function resetDepts() {

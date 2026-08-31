@@ -358,7 +358,8 @@ function buildReminders() {
 }
 
 function previewReminders() {
-  var ui = SpreadsheetApp.getUi();
+  var ui = uiOrNull();
+  if (!ui) throw new Error('이 기능은 스프레드시트 메뉴에서 실행해 주세요.');
   var list = buildReminders();
   if (!list.length) {
     ui.alert('마감 알림 미리보기', '내일·모레 마감인 항목이 없거나,\nusers 시트에 이메일이 입력된 선생님이 없습니다.', ui.ButtonSet.OK);
@@ -400,7 +401,8 @@ function sendDeadlineReminders() {
 }
 
 function enableReminderTrigger() {
-  var ui = SpreadsheetApp.getUi();
+  var ui = uiOrNull();
+  if (!ui) throw new Error('이 기능은 스프레드시트 메뉴에서 실행해 주세요.');
   var res = ui.alert('마감 알림 자동 발송',
     '매일 오전 7시에 마감 1~2일 전 업무를 담당 선생님께 메일로 보냅니다.\n\n' +
     'users 시트의 email 칸이 채워진 분에게만 발송됩니다.\n켤까요?', ui.ButtonSet.YES_NO);
