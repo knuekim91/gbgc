@@ -7,7 +7,7 @@
 
   var state = {
     links: [], depts: [], config: {}, me: null, users: [],
-    progress: {}, filter: 'all', q: ''
+    progress: {}, open: [], filter: 'all', q: ''
   };
 
   var $  = function (s, r) { return (r || document).querySelector(s); };
@@ -157,7 +157,7 @@
       if (state.filter !== 'all' && state.filter !== 'fav' &&
           state.filter !== 'due' && state.filter !== 'mine' && l.dept !== state.filter) return false;
       if (q) {
-        var hay = (l.title + ' ' + l.dept + ' ' + (l.note || '')).toLowerCase();
+        var hay = (l.title + ' ' + l.dept + ' ' + (l.note || '') + ' ' + (l.desc || '')).toLowerCase();
         return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
       }
       return true;
@@ -266,30 +266,50 @@
     var starred = fav.indexOf(l.id) >= 0;
     var showDept = state.filter === 'fav' || state.filter === 'due' || !!state.q;
 
-    // 링크가 없는 업무는 누를 곳이 없으므로 글자로만 보여 줍니다.
-    var titleHtml = l.url
-      ? '<a class="item-link" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.title) + '</a>'
-      : '<span class="item-text">' + esc(l.title) + '</span>';
+    var open = state.open.indexOf(l.id) >= 0;
+    var pid = 'p-' + l.id;
 
-    return '<li class="item" data-id="' + esc(l.id) + '">' +
-      '<span class="item-icon" title="' + esc(TYPE_LABEL[type] || '링크') + '">' + (TYPE_ICON[type] || '🔗') + '</span>' +
-      '<div class="item-main">' +
-        titleHtml +
-        '<div class="item-meta">' +
-          (showDept ? '<span class="tag dept" style="--dept:' + deptColor(l.dept) + '">' + esc(l.dept) + '</span>' : '') +
-          deadlineTag(l.deadline) +
-          progressTag(l) +
-          (l.note ? '<span class="tag">' + esc(l.note) + '</span>' : '') +
+    // 제목 줄을 누르면 아래로 펼쳐집니다. 링크는 펼친 안에서 엽니다.
+    return '<li class="item' + (open ? ' open' : '') + '" data-id="' + esc(l.id) + '">' +
+      '<div class="item-head">' +
+        '<button class="item-toggle" type="button" data-toggle="' + esc(l.id) + '"' +
+          ' aria-expanded="' + open + '" aria-controls="' + pid + '">' +
+          '<span class="item-icon" title="' + esc(TYPE_LABEL[type] || '링크') + '">' + (TYPE_ICON[type] || '🔗') + '</span>' +
+          '<span class="item-main">' +
+            '<span class="item-title">' + esc(l.title) + '</span>' +
+            '<span class="item-meta">' +
+              (showDept ? '<span class="tag dept" style="--dept:' + deptColor(l.dept) + '">' + esc(l.dept) + '</span>' : '') +
+              deadlineTag(l.deadline) +
+              progressTag(l) +
+              (l.note ? '<span class="tag">' + esc(l.note) + '</span>' : '') +
+              (l.desc ? '<span class="tag has-desc">알릴 내용</span>' : '') +
+            '</span>' +
+          '</span>' +
+          '<span class="caret" aria-hidden="true">▾</span>' +
+        '</button>' +
+        '<div class="item-tools">' +
+          '<button class="tool star' + (starred ? ' on' : '') + '" type="button" data-star="' + esc(l.id) +
+            '" aria-label="즐겨찾기">' + (starred ? '★' : '☆') + '</button>' +
+          (l.url
+            ? '<a class="tool" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer" aria-label="새 탭에서 열기" title="새 탭에서 열기">↗</a>' +
+              '<button class="tool" type="button" data-copy="' + esc(l.id) + '" aria-label="주소 복사">⧉</button>'
+            : '') +
+          (editable
+            ? '<button class="tool" type="button" data-edit="' + esc(l.id) + '" aria-label="수정">✎</button>' +
+              '<button class="tool" type="button" data-del="' + esc(l.id) + '" aria-label="삭제">🗑</button>'
+            : '') +
         '</div>' +
       '</div>' +
-      '<div class="item-tools">' +
-        '<button class="tool star' + (starred ? ' on' : '') + '" type="button" data-star="' + esc(l.id) +
-          '" aria-label="즐겨찾기">' + (starred ? '★' : '☆') + '</button>' +
-        (l.url ? '<button class="tool" type="button" data-copy="' + esc(l.id) + '" aria-label="주소 복사">⧉</button>' : '') +
-        (editable
-          ? '<button class="tool" type="button" data-edit="' + esc(l.id) + '" aria-label="수정">✎</button>' +
-            '<button class="tool" type="button" data-del="' + esc(l.id) + '" aria-label="삭제">🗑</button>'
-          : '') +
+      '<div class="item-panel" id="' + pid + '"' + (open ? '' : ' hidden') + '>' +
+        '<dl class="detail">' +
+          '<dt>제목</dt><dd>' + esc(l.title) + '</dd>' +
+          '<dt>링크</dt><dd>' +
+            (l.url
+              ? '<a class="panel-link" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.url) + '</a>'
+              : '') +
+          '</dd>' +
+          '<dt>알릴 내용</dt><dd class="desc">' + esc(l.desc || '') + '</dd>' +
+        '</dl>' +
       '</div>' +
     '</li>';
   }
@@ -452,6 +472,20 @@
   // 보드 안의 버튼들
   $('#board').addEventListener('click', function (e) {
     var el;
+    if ((el = e.target.closest('[data-toggle]'))) {
+      var tid = el.dataset.toggle;
+      var at = state.open.indexOf(tid);
+      if (at < 0) state.open.push(tid); else state.open.splice(at, 1);
+
+      // 화면 전체를 다시 그리지 않고 해당 항목만 여닫습니다.
+      var li = el.closest('.item');
+      var panel = li.querySelector('.item-panel');
+      var nowOpen = at < 0;
+      li.classList.toggle('open', nowOpen);
+      panel.hidden = !nowOpen;
+      el.setAttribute('aria-expanded', String(nowOpen));
+      return;
+    }
     if ((el = e.target.closest('[data-star]'))) {
       var on = toggleFav(el.dataset.star);
       el.classList.toggle('on', on);
@@ -548,6 +582,7 @@
       f.url.value = link.url;
       f.deadline.value = link.deadline || '';
       f.note.value = link.note || '';
+      f.desc.value = link.desc || '';
       f.track.checked = String(link.track).toUpperCase() === 'Y';
       f.target.value = link.target || '';
       hintFor(link.url);
@@ -588,7 +623,7 @@
       link: {
         id: f.id.value, dept: f.dept.value, title: f.title.value.trim(),
         url: f.url.value.trim(), deadline: f.deadline.value, note: f.note.value.trim(),
-        track: f.track.checked, target: f.target.value
+        desc: f.desc.value.trim(), track: f.track.checked, target: f.target.value
       }
     }).then(function (d) {
       state.links = d.links;

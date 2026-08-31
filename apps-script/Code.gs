@@ -20,7 +20,7 @@ var HASH_ROUNDS = 600;
 
 // track / target / email 은 뒤에 덧붙였습니다. 기존 시트를 쓰던 중이라면
 // 메뉴 [경북여상 허브 > 시트 열 최신화] 를 한 번 실행해 주세요.
-var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target'];
+var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc'];
 var USER_COLS = ['name','dept','role','salt','hash','mustChange','updatedAt','email'];
 
 /* ===================== 진입점 ===================== */
@@ -210,7 +210,8 @@ function actSaveLink(req) {
     updatedBy: me.name,
     updatedAt: now(),
     track: link.track ? 'Y' : '',
-    target: Number(link.target) || ''
+    target: Number(link.target) || '',
+    desc: String(link.desc || '').trim()
   };
 
   if (id) {
