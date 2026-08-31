@@ -650,9 +650,81 @@
     }).catch(function (err) { showErr(f, err.message); });
   });
 
+  /* 비밀번호 재설정 — 등록된 이메일로 코드를 받아 새로 정합니다. */
+  $('#forgotBtn').addEventListener('click', function () {
+    var ask = $('#resetAskForm'), doIt = $('#resetDoForm');
+    ask.reset(); doIt.reset();
+    showErr(ask, ''); showErr(doIt, '');
+    ask.hidden = false; doIt.hidden = true;
+    ask.querySelector('[name=name]').value = $('#loginForm').name.value.trim();
+    $('#dlgLogin').close();
+    $('#dlgReset').showModal();
+  });
+
+  $('#resetAskForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target;
+    showErr(f, '');
+    var btn = f.querySelector('button[type=submit]');
+    btn.disabled = true; btn.textContent = '보내는 중…';
+
+    api('requestReset', { name: f.querySelector('[name=name]').value.trim() }).then(function (d) {
+      $('#resetSent').textContent = d.sentTo + ' 로 코드를 보냈습니다. 메일함을 확인해 주세요.';
+      f.hidden = true;
+      $('#resetDoForm').hidden = false;
+      $('#resetDoForm').code.focus();
+    }).catch(function (err) {
+      showErr(f, err.message);
+    }).then(function () {
+      btn.disabled = false; btn.textContent = '코드 받기';
+    });
+  });
+
+  $('#resetDoForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target;
+    showErr(f, '');
+    if (f.next.value !== f.confirm.value) return showErr(f, '새 비밀번호가 서로 다릅니다.');
+
+    var btn = f.querySelector('button[type=submit]');
+    btn.disabled = true; btn.textContent = '바꾸는 중…';
+
+    api('confirmReset', {
+      name: $('#resetAskForm').querySelector('[name=name]').value.trim(),
+      code: f.code.value.trim(),
+      next: f.next.value
+    }).then(function (d) {
+      store(LS.token, d.token);
+      applyBoot(d);
+      $('#dlgReset').close();
+      toast('비밀번호를 바꾸고 로그인했습니다');
+    }).catch(function (err) {
+      showErr(f, err.message);
+    }).then(function () {
+      btn.disabled = false; btn.textContent = '비밀번호 바꾸기';
+    });
+  });
+
+  // 내 이메일 저장
+  $('#emailForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target;
+    showErr(f, '');
+    api('saveMyEmail', { email: f.email.value.trim() }).then(function (d) {
+      state.me = d.me;
+      toast(d.me.email ? '이메일을 저장했습니다' : '이메일을 지웠습니다');
+    }).catch(function (err) { showErr(f, err.message); });
+  });
+
+  $$('[data-close]').forEach(function (b) {
+    b.addEventListener('click', function () { $('#' + b.dataset.close).close(); });
+  });
+
   // 내 계정
   function openAccount() {
     var me = state.me;
+    $('#emailForm').email.value = me.email || '';
+    showErr($('#emailForm'), '');
     $('#acctName').textContent = me.name;
     $('#acctRole').textContent = me.role === 'admin' ? '관리자 (전체 부서)' : '부서 담당';
     $('#acctDept').textContent = me.role === 'admin' ? '전체' : (me.dept || '-');

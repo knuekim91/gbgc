@@ -53,6 +53,9 @@ function handle(req) {
       case 'login':          return json(actLogin(req));
       case 'me':             return json(actMe(req));
       case 'changePassword': return json(actChangePassword(req));
+      case 'saveMyEmail':    return json(actSaveMyEmail(req));
+      case 'requestReset':   return json(actRequestReset(req));
+      case 'confirmReset':   return json(actConfirmReset(req));
       case 'saveLink':       return json(actSaveLink(req));
       case 'deleteLink':     return json(actDeleteLink(req));
       case 'reorder':        return json(actReorder(req));
@@ -206,6 +209,99 @@ function actChangePassword(req) {
   var salt = newSalt();
   updateUserRow(me.name, { salt: salt, hash: hashPassword(next, salt), mustChange: '', updatedAt: now() });
   return { ok: true, token: makeToken(me.name), me: publicUser(findUser(me.name)) };
+}
+
+/** 본인 이메일 등록 — 비밀번호 재설정과 마감 알림에 씁니다. */
+function actSaveMyEmail(req) {
+  var me = requireUser(req);
+  var email = String(req.email || '').trim();
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    throw new Error('이메일 형식이 올바르지 않습니다.');
+  }
+  updateUserRow(me.name, { email: email, updatedAt: now() });
+  return { ok: true, me: publicUser(findUser(me.name)) };
+}
+
+/**
+ * 비밀번호 재설정 1단계 — 등록된 이메일로 6자리 코드를 보냅니다.
+ *
+ * 코드를 확인하기 전까지 기존 비밀번호는 그대로 살아 있습니다.
+ * 그래서 남이 함부로 요청해도 계정이 잠기지 않습니다.
+ */
+function actRequestReset(req) {
+  var name = String(req.name || '').trim();
+  var u = findUser(name);
+  if (!u) throw new Error('등록되지 않은 이름입니다.');
+
+  var email = String(u.email || '').trim();
+  if (!email) {
+    throw new Error('등록된 이메일이 없습니다.\n관리자 선생님께 비밀번호 초기화를 요청해 주세요.');
+  }
+
+  var cache = CacheService.getScriptCache();
+  if (cache.get('rt_' + name)) {
+    throw new Error('조금 전에 코드를 보냈습니다. 메일함을 확인해 주세요.');
+  }
+
+  var code = String(Math.floor(100000 + Math.random() * 900000));
+  cache.put('rc_' + name, code, 900);    // 15분
+  cache.put('rt_' + name, '1', 60);      // 1분 안에 재요청 방지
+
+  var title = String(readConfig().siteTitle || '경북여상 교무실 업무 허브');
+  MailApp.sendEmail({
+    to: email,
+    subject: '[' + title + '] 비밀번호 재설정 코드',
+    htmlBody:
+      '<div style="font-family:sans-serif;font-size:14px;line-height:1.7;color:#16191d">' +
+        '<p>' + name + ' 선생님, 비밀번호 재설정 코드입니다.</p>' +
+        '<p style="font-size:30px;font-weight:700;letter-spacing:6px;margin:18px 0">' + code + '</p>' +
+        '<p>15분 안에 입력해 주세요.</p>' +
+        '<p style="color:#8b95a3;font-size:12px;margin-top:22px">' +
+          '요청하지 않으셨다면 이 메일을 무시하셔도 됩니다. ' +
+          '코드를 넣기 전까지 기존 비밀번호는 그대로 쓸 수 있습니다.</p>' +
+      '</div>'
+  });
+
+  return { ok: true, sentTo: maskEmail(email) };
+}
+
+/** 비밀번호 재설정 2단계 — 코드를 확인하고 새 비밀번호를 저장합니다. */
+function actConfirmReset(req) {
+  var name = String(req.name || '').trim();
+  var code = String(req.code || '').trim();
+  var next = String(req.next || '');
+
+  var u = findUser(name);
+  if (!u) throw new Error('등록되지 않은 이름입니다.');
+  if (next.length < 4) throw new Error('새 비밀번호는 4자 이상이어야 합니다.');
+  if (next === DEFAULT_PASSWORD) throw new Error('초기 비밀번호와 다르게 정해 주세요.');
+
+  var cache = CacheService.getScriptCache();
+  var saved = cache.get('rc_' + name);
+  if (!saved) throw new Error('코드가 만료되었습니다. 다시 요청해 주세요.');
+  if (saved !== code) throw new Error('코드가 맞지 않습니다.');
+
+  var salt = newSalt();
+  updateUserRow(name, { salt: salt, hash: hashPassword(next, salt), mustChange: '', updatedAt: now() });
+  cache.remove('rc_' + name);
+  cache.remove('rt_' + name);
+
+  var fresh = findUser(name);
+  return {
+    ok: true,
+    token: makeToken(fresh.name),
+    me: publicUser(fresh),
+    config: readConfig(),
+    links: readLinks(),
+    depts: deptList(),
+    locked: false
+  };
+}
+
+function maskEmail(email) {
+  var at = email.indexOf('@');
+  if (at < 2) return '***' + email.slice(at);
+  return email.slice(0, 2) + '***' + email.slice(at);
 }
 
 function actSaveLink(req) {

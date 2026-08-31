@@ -67,10 +67,46 @@
     </label>
     <p class="err" data-err hidden></p>
     <menu>
+      <button type="button" id="forgotBtn" class="linklike">비밀번호를 잊으셨나요?</button>
+      <span class="grow"></span>
       <button value="cancel" class="btn btn-ghost" type="submit" formnovalidate>취소</button>
       <button value="ok" class="btn btn-primary">로그인</button>
     </menu>
   </form>
+</dialog>
+
+<!-- 비밀번호 재설정 -->
+<dialog id="dlgReset" class="dlg">
+  <div class="dlg-body">
+    <h2>비밀번호 재설정</h2>
+
+    <form id="resetAskForm" class="stack">
+      <p class="muted small">
+        등록해 두신 이메일로 6자리 코드를 보내 드립니다.
+        코드를 넣기 전까지 <b>지금 비밀번호는 그대로 쓸 수 있습니다.</b>
+      </p>
+      <label>이름 <input name="name" required placeholder="예) 김재홍" autocomplete="username"></label>
+      <p class="err" data-err hidden></p>
+      <menu>
+        <button type="button" class="btn btn-ghost" data-close="dlgReset">취소</button>
+        <button class="btn btn-primary" type="submit">코드 받기</button>
+      </menu>
+    </form>
+
+    <form id="resetDoForm" class="stack" hidden>
+      <p class="ok-note" id="resetSent"></p>
+      <label>메일로 받은 6자리 코드
+        <input name="code" required inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+      </label>
+      <label>새 비밀번호 <input name="next" type="password" required minlength="4" autocomplete="new-password"></label>
+      <label>새 비밀번호 확인 <input name="confirm" type="password" required minlength="4" autocomplete="new-password"></label>
+      <p class="err" data-err hidden></p>
+      <menu>
+        <button type="button" class="btn btn-ghost" data-close="dlgReset">취소</button>
+        <button class="btn btn-primary" type="submit">비밀번호 바꾸기</button>
+      </menu>
+    </form>
+  </div>
 </dialog>
 
 <!-- 업무 추가 / 수정 -->
@@ -135,6 +171,19 @@
       <b>처음 로그인하셨습니다.</b>
       지금 비밀번호를 새로 정해 주세요. 초기 비밀번호 <code>2026</code> 은 모두가 아는 값입니다.
     </p>
+
+    <form id="emailForm" class="stack">
+      <h3>내 이메일</h3>
+      <p class="hint">
+        비밀번호를 잊었을 때 <b>본인이 직접 재설정</b>할 수 있게 해 줍니다.
+        마감 알림도 이 주소로 갑니다. 넣지 않으시면 관리자에게 초기화를 요청하셔야 합니다.
+      </p>
+      <div class="inline">
+        <input name="email" type="email" placeholder="예) hong@dge.go.kr" autocomplete="email">
+        <button class="btn btn-primary" type="submit">저장</button>
+      </div>
+      <p class="err" data-err hidden></p>
+    </form>
 
     <form id="pwForm" class="stack">
       <h3>비밀번호 변경</h3>

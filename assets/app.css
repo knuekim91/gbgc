@@ -397,6 +397,24 @@ input:focus, select:focus, textarea:focus {
 }
 .firstrun b { display: block; margin-bottom: 2px; }
 
+/* 링크처럼 보이는 버튼 (비밀번호 찾기) */
+.linklike {
+  background: none; border: 0; cursor: pointer; font: inherit; font-size: 12.5px;
+  color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; padding: 7px 0;
+}
+.linklike:hover { color: var(--accent); }
+.dlg menu .grow { flex: 1; }
+
+/* 이메일 입력 + 저장 버튼 한 줄 */
+.inline { display: flex; gap: 7px; align-items: center; }
+.inline input { flex: 1; min-width: 0; }
+.inline button { flex-shrink: 0; }
+
+.ok-note {
+  margin: 0; padding: 10px 13px; border-radius: 9px; font-size: 13px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent);
+}
+
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; margin: 0; font-size: 13.5px; }
 .kv dt { color: var(--ink-3); font-size: 12.5px; }
 .kv dd { margin: 0; }
