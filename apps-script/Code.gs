@@ -454,9 +454,11 @@ function secret() {
   return s;
 }
 
+// 한글 이름이 들어가므로 반드시 UTF-8 을 지정해야 합니다.
+// 지정하지 않으면 Apps Script 가 한글을 '???' 로 바꿔 버려 토큰이 무용지물이 됩니다.
 function makeToken(name) {
   var body = name + '|' + (Date.now() + TOKEN_HOURS * 3600 * 1000);
-  return Utilities.base64EncodeWebSafe(body) + '.' + sign(body);
+  return Utilities.base64EncodeWebSafe(body, Utilities.Charset.UTF_8) + '.' + sign(body);
 }
 
 function verifyToken(token) {
@@ -471,7 +473,7 @@ function verifyToken(token) {
 }
 
 function sign(text) {
-  return toHex(Utilities.computeHmacSha256Signature(text, secret()));
+  return toHex(Utilities.computeHmacSha256Signature(text, secret(), Utilities.Charset.UTF_8));
 }
 
 function newSalt() { return Utilities.getUuid().replace(/-/g, ''); }
@@ -479,7 +481,7 @@ function newSalt() { return Utilities.getUuid().replace(/-/g, ''); }
 function hashPassword(password, salt) {
   var v = salt + ' ' + password;
   for (var i = 0; i < HASH_ROUNDS; i++) {
-    v = toHex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, v + salt));
+    v = toHex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, v + salt, Utilities.Charset.UTF_8));
   }
   return v;
 }

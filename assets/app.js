@@ -502,17 +502,24 @@
     e.preventDefault();
     var f = e.target;
     showErr(f, '');
+    // 세션이 실제로 붙은 것을 확인한 다음에 창을 닫습니다.
+    // 먼저 닫아 버리면 세션 확인이 실패했을 때 아무 안내 없이 로그아웃 상태로 돌아갑니다.
     api('login', { name: f.name.value, password: f.password.value }).then(function (d) {
       store(LS.token, d.token);
-      state.me = d.me;
-      f.reset();
-      $('#dlgLogin').close();
       return bootstrap();
     }).then(function () {
-      if (!state.me) return;
+      if (!state.me) {
+        throw new Error('로그인은 되었지만 세션을 확인하지 못했습니다.\n' +
+                        '관리자에게 Apps Script 재배포가 필요한지 문의해 주세요.');
+      }
+      f.reset();
+      $('#dlgLogin').close();
       toast(state.me.name + ' 님, 반갑습니다');
       if (pendingAdd) { var seed = pendingAdd; pendingAdd = null; openAddWith(seed); }
-    }).catch(function (err) { showErr(f, err.message); });
+    }).catch(function (err) {
+      store(LS.token, null);
+      showErr(f, err.message);
+    });
   });
 
   // 링크 추가 / 수정
