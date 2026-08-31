@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1f2937">
-<meta name="description" content="경북여상 부서별 공유시트·업무 링크를 한 곳에서 찾고 등록하는 웹앱">
-<title>경북여상 업무 허브</title>
+<meta name="description" content="경북여상 교무실 부서별 공유시트·업무 링크를 한 곳에서 찾고 등록하는 웹앱">
+<title>경북여상 교무실 업무 허브</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
@@ -18,7 +18,7 @@
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">🏫</span>
       <div class="brand-text">
-        <strong id="siteTitle">경북여상 업무 허브</strong>
+        <strong id="siteTitle">경북여상 교무실 업무 허브</strong>
         <span id="siteYear" class="muted">2026학년도</span>
       </div>
     </div>
@@ -97,6 +97,18 @@
         <input name="note" placeholder="예) 담임 선생님만">
       </label>
     </div>
+
+    <div class="track-box">
+      <label class="check">
+        <input name="track" type="checkbox">
+        <span>수합 현황 표시 <span class="muted">— 시트에 입력된 줄 수를 세어 카드에 보여 줍니다</span></span>
+      </label>
+      <label class="track-target" hidden><span class="lbl">대상 인원 <span class="muted">(선택)</span></span>
+        <input name="target" type="number" min="0" step="1" placeholder="예) 30">
+      </label>
+      <p class="hint">구글시트만 셀 수 있습니다. 구글폼은 [응답 → 스프레드시트에 연결] 후 그 시트 주소를 등록해 주세요.</p>
+    </div>
+
     <p class="err" data-err hidden></p>
     <menu>
       <button value="cancel" class="btn btn-ghost" type="submit" formnovalidate>취소</button>
@@ -124,18 +136,30 @@
       <button class="btn btn-primary" type="submit">비밀번호 변경</button>
     </form>
 
+    <h3>빠른 등록 도구</h3>
+    <p class="hint">
+      아래 버튼을 브라우저 <b>즐겨찾기 바로 끌어다 놓으세요.</b>
+      구글시트를 보다가 그 버튼을 누르면 제목과 주소가 채워진 등록창이 바로 열립니다.
+    </p>
+    <a id="bookmarklet" class="btn bookmarklet" href="#" draggable="true">＋ 허브에 등록</a>
+
     <div id="adminPane" hidden>
       <h3>사용자 관리 <span class="muted small">(관리자)</span></h3>
       <form id="userForm" class="userform">
         <input name="name" placeholder="선생님 이름" required>
-        <select name="dept"></select>
+        <input name="dept" list="deptOptions" placeholder="담당 부서" autocomplete="off">
+        <datalist id="deptOptions"></datalist>
         <select name="role">
           <option value="teacher">부서 담당</option>
           <option value="admin">관리자</option>
         </select>
-        <button class="btn btn-primary" type="submit">추가/수정</button>
+        <input name="email" type="email" placeholder="이메일 (마감 알림용, 선택)">
+        <button class="btn btn-primary" type="submit">추가 / 수정</button>
       </form>
-      <p class="hint">부서를 여러 개 맡으시면 쉼표로 구분해 <code>users</code> 시트에서 직접 입력하셔도 됩니다.</p>
+      <p class="hint">
+        부서를 여러 개 맡으시면 쉼표로 구분해 적어 주세요 (예: <code>연구부, 전문교육부</code>).
+        이메일을 넣으면 마감 1~2일 전 알림 메일을 받으실 수 있습니다.
+      </p>
       <div id="userList" class="userlist"></div>
     </div>
 

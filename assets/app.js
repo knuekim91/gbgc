@@ -7,7 +7,7 @@
 
   var state = {
     links: [], depts: [], config: {}, me: null, users: [],
-    filter: 'all', q: ''
+    progress: {}, filter: 'all', q: ''
   };
 
   var $  = function (s, r) { return (r || document).querySelector(s); };
@@ -231,6 +231,8 @@
         '<div class="card-head">' +
           '<h2>' + esc(g.dept) + '</h2>' +
           '<span class="count">' + g.items.length + '</span>' +
+          '<button class="share" type="button" data-share="' + esc(g.dept) +
+            '" title="' + esc(g.dept) + ' 전용 주소 복사" aria-label="' + esc(g.dept) + ' 전용 주소 복사">🔗</button>' +
           (editable ? '<button class="add" type="button" data-add="' + esc(g.dept) +
                       '" title="' + esc(g.dept) + '에 링크 추가" aria-label="' + esc(g.dept) + '에 링크 추가">＋</button>' : '') +
         '</div>' +
@@ -239,6 +241,23 @@
           : '<p class="empty-dept">아직 등록된 링크가 없습니다. ＋ 를 눌러 추가해 주세요.</p>') +
       '</section>';
     }).join('');
+  }
+
+  // 수합 현황 배지 — 대상 인원을 적어 두면 막대와 함께, 아니면 건수만 보여 줍니다.
+  function progressTag(l) {
+    if (String(l.track).toUpperCase() !== 'Y') return '';
+    var p = state.progress[l.id];
+    if (!p) return '<span class="prog err">수합 현황 확인 중…</span>';
+    if (p.error) return '<span class="prog err" title="' + esc(p.error) + '">수합 현황 –</span>';
+
+    var target = Number(p.target) || 0;
+    if (!target) return '<span class="prog">' + p.count + '건 제출</span>';
+
+    var pct = Math.min(100, Math.round(p.count / target * 100));
+    return '<span class="prog' + (p.count >= target ? ' done' : '') + '">' +
+      '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+      p.count + '/' + target + (p.count >= target ? ' 완료' : '') +
+    '</span>';
   }
 
   function itemHtml(l, fav, editable) {
@@ -253,6 +272,7 @@
         '<div class="item-meta">' +
           (showDept ? '<span class="tag dept" style="--dept:' + deptColor(l.dept) + '">' + esc(l.dept) + '</span>' : '') +
           deadlineTag(l.deadline) +
+          progressTag(l) +
           (l.note ? '<span class="tag">' + esc(l.note) + '</span>' : '') +
         '</div>' +
       '</div>' +
@@ -313,6 +333,9 @@
         if (!$('#dlgLogin').open) $('#dlgLogin').showModal();
         return;
       }
+      applyHash();
+      loadProgress();
+      handleQuickAdd();
       if (state.me && state.me.mustChange) {
         toast('초기 비밀번호를 사용 중입니다. 이름 버튼 → 비밀번호를 변경해 주세요.');
       }
@@ -322,6 +345,49 @@
       el.hidden = false;
       el.textContent = '데이터를 불러오지 못했습니다.\n' + e.message;
     });
+  }
+
+  // 수합 현황은 대상 시트를 여느라 느리므로 화면을 먼저 그린 뒤 따로 불러옵니다.
+  function loadProgress() {
+    if (!state.links.some(function (l) { return String(l.track).toUpperCase() === 'Y'; })) return;
+    api('progress').then(function (d) {
+      state.progress = d.progress || {};
+      renderBoard();
+    }).catch(function () { /* 현황 표시는 실패해도 본 화면에 영향을 주지 않습니다 */ });
+  }
+
+  /* 부서 전용 주소 (#연구부) — 카톡 등으로 부서별 링크를 뿌릴 때 씁니다. */
+  function applyHash() {
+    var raw = decodeURIComponent(location.hash.replace(/^#/, '')).trim();
+    if (!raw) return;
+    var known = ['all', 'fav', 'due', 'mine'].concat(state.depts);
+    if (known.indexOf(raw) >= 0) { state.filter = raw; renderChips(); renderBoard(); }
+  }
+  window.addEventListener('hashchange', applyHash);
+
+  /* 북마클릿으로 넘어온 ?add=1&url=..&title=.. 처리 */
+  var pendingAdd = null;
+
+  function openAddWith(seed) {
+    openLinkForm({
+      id: '', dept: myDepts()[0] || '', title: seed.title || '',
+      url: seed.url || '', deadline: '', note: '', track: '', target: ''
+    });
+    $('#linkFormTitle').textContent = '링크 추가';
+  }
+
+  function handleQuickAdd() {
+    var p = new URLSearchParams(location.search);
+    if (p.get('add') !== '1') return;
+    history.replaceState(null, '', location.pathname + location.hash);
+
+    if (!state.me) {
+      pendingAdd = { url: p.get('url') || '', title: p.get('title') || '' };
+      toast('로그인하면 등록창이 열립니다');
+      if (!$('#dlgLogin').open) $('#dlgLogin').showModal();
+      return;
+    }
+    openAddWith({ url: p.get('url') || '', title: p.get('title') || '' });
   }
 
   function showSetupHelp() {
@@ -338,7 +404,7 @@
       return '<option value="' + esc(d) + '">' + esc(d) + '</option>';
     }).join('');
     $('#linkForm select[name=dept]').innerHTML = opts;
-    $('#userForm select[name=dept]').innerHTML = '<option value="">(부서 없음)</option>' + opts;
+    $('#deptOptions').innerHTML = opts;
   }
 
   /* ── 이벤트 ───────────────────────── */
@@ -370,6 +436,9 @@
     var b = e.target.closest('[data-f]');
     if (!b) return;
     state.filter = b.dataset.f;
+    // 주소창에도 반영해서 지금 보는 화면을 그대로 공유할 수 있게 합니다.
+    history.replaceState(null, '',
+      location.pathname + (state.filter === 'all' ? '' : '#' + encodeURIComponent(state.filter)));
     renderChips(); renderBoard();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
@@ -389,6 +458,11 @@
       if (link) copyText(link.url);
       return;
     }
+    if ((el = e.target.closest('[data-share]'))) {
+      copyText(location.origin + location.pathname + '#' + encodeURIComponent(el.dataset.share),
+               el.dataset.share + ' 전용 주소를 복사했습니다');
+      return;
+    }
     if ((el = e.target.closest('[data-add]'))) { openLinkForm(null, el.dataset.add); return; }
     if ((el = e.target.closest('[data-edit]'))) {
       openLinkForm(state.links.filter(function (l) { return l.id === el.dataset.edit; })[0]);
@@ -404,8 +478,8 @@
     }
   });
 
-  function copyText(text) {
-    var done = function () { toast('주소를 복사했습니다'); };
+  function copyText(text, message) {
+    var done = function () { toast(message || '주소를 복사했습니다'); };
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(done, fallback);
     } else { fallback(); }
@@ -435,7 +509,9 @@
       $('#dlgLogin').close();
       return bootstrap();
     }).then(function () {
-      if (state.me) toast(state.me.name + ' 님, 반갑습니다');
+      if (!state.me) return;
+      toast(state.me.name + ' 님, 반갑습니다');
+      if (pendingAdd) { var seed = pendingAdd; pendingAdd = null; openAddWith(seed); }
     }).catch(function (err) { showErr(f, err.message); });
   });
 
@@ -459,15 +535,23 @@
       f.url.value = link.url;
       f.deadline.value = link.deadline || '';
       f.note.value = link.note || '';
+      f.track.checked = String(link.track).toUpperCase() === 'Y';
+      f.target.value = link.target || '';
       hintFor(link.url);
     } else {
       $('#linkFormTitle').textContent = '링크 추가';
       f.id.value = '';
-      if (dept) f.dept.value = dept;
+      if (dept && allowed.indexOf(dept) >= 0) f.dept.value = dept;
     }
-    $('#dlgLink').showModal();
+    syncTrackBox();
+    if (!$('#dlgLink').open) $('#dlgLink').showModal();
     setTimeout(function () { (link ? f.title : f.url).focus(); }, 40);
   }
+
+  function syncTrackBox() {
+    $('.track-target').hidden = !$('#linkForm').track.checked;
+  }
+  $('#linkForm').track.addEventListener('change', syncTrackBox);
 
   $('#linkForm').url.addEventListener('input', function (e) { hintFor(e.target.value); });
 
@@ -486,13 +570,15 @@
     api('saveLink', {
       link: {
         id: f.id.value, dept: f.dept.value, title: f.title.value.trim(),
-        url: f.url.value.trim(), deadline: f.deadline.value, note: f.note.value.trim()
+        url: f.url.value.trim(), deadline: f.deadline.value, note: f.note.value.trim(),
+        track: f.track.checked, target: f.target.value
       }
     }).then(function (d) {
       state.links = d.links;
       $('#dlgLink').close();
       renderAll();
       toast(f.id.value ? '수정했습니다' : '링크를 추가했습니다');
+      loadProgress();
     }).catch(function (err) { showErr(f, err.message); });
   });
 
@@ -505,10 +591,23 @@
     showErr($('#pwForm'), '');
     $('#pwForm').reset();
 
+    buildBookmarklet();
+
     var isAdmin = me.role === 'admin';
     $('#adminPane').hidden = !isAdmin;
     if (isAdmin) loadUsers();
     $('#dlgAccount').showModal();
+  }
+
+  // 구글시트를 보다가 한 번에 등록할 수 있는 즐겨찾기 버튼을 만듭니다.
+  function buildBookmarklet() {
+    var home = location.origin + location.pathname;
+    var code =
+      "javascript:(function(){" +
+        "var t=document.title.replace(/\\s*[-–]\\s*Google\\s+(Sheets|Docs|Drive|Forms|Slides).*$/i,'').trim();" +
+        "window.open('" + home + "?add=1&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(t),'_blank');" +
+      "})()";
+    $('#bookmarklet').setAttribute('href', code);
   }
 
   $('#acctClose').addEventListener('click', function () { $('#dlgAccount').close(); });
@@ -544,7 +643,7 @@
       return '<div class="urow">' +
         '<b>' + esc(u.name) + '</b>' +
         '<span class="grow">' + (u.role === 'admin' ? '관리자' : esc(u.dept || '부서 없음')) +
-          (u.mustChange ? ' · 초기 비밀번호' : '') + '</span>' +
+          (u.email ? ' · ✉' : '') + (u.mustChange ? ' · 초기 비밀번호' : '') + '</span>' +
         '<button class="tool" type="button" data-reset="' + esc(u.name) + '" title="비밀번호 초기화">↺</button>' +
         '<button class="tool" type="button" data-udel="' + esc(u.name) + '" title="삭제">🗑</button>' +
       '</div>';
@@ -554,7 +653,12 @@
   $('#userForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target;
-    api('saveUser', { user: { name: f.name.value.trim(), dept: f.dept.value, role: f.role.value } })
+    api('saveUser', {
+      user: {
+        name: f.name.value.trim(), dept: f.dept.value.trim(),
+        role: f.role.value, email: f.email.value.trim()
+      }
+    })
       .then(function (d) {
         state.users = d.users; renderUsers(); f.reset();
         toast('저장했습니다 (초기 비밀번호 2026)');
@@ -564,6 +668,18 @@
 
   $('#userList').addEventListener('click', function (e) {
     var el;
+    // 이름을 누르면 위 입력칸에 그대로 채워 넣어 바로 고칠 수 있게 합니다.
+    if (!e.target.closest('button') && (el = e.target.closest('.urow'))) {
+      var name = el.querySelector('b').textContent;
+      var u = state.users.filter(function (x) { return x.name === name; })[0];
+      if (u) {
+        var f = $('#userForm');
+        f.name.value = u.name; f.dept.value = u.dept;
+        f.role.value = u.role; f.email.value = u.email || '';
+        f.name.focus();
+      }
+      return;
+    }
     if ((el = e.target.closest('[data-reset]'))) {
       if (!confirm(el.dataset.reset + ' 님의 비밀번호를 2026 으로 초기화할까요?')) return;
       api('resetPassword', { name: el.dataset.reset })

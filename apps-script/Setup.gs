@@ -91,8 +91,21 @@ function onOpen() {
     .addItem('1. 초기 설치 (시트 생성 + 링크 이전)', 'installHub')
     .addItem('2. 관리자 계정 추가', 'addAdminAccount')
     .addSeparator()
+    .addItem('마감 알림 미리보기', 'previewReminders')
+    .addItem('마감 알림 자동 발송 켜기', 'enableReminderTrigger')
+    .addItem('마감 알림 자동 발송 끄기', 'disableReminderTrigger')
+    .addSeparator()
+    .addItem('시트 열 최신화', 'migrateColumns')
     .addItem('부서 목록 기본값으로 되돌리기', 'resetDepts')
     .addToUi();
+}
+
+/** 새 기능으로 늘어난 열(track/target/email)을 기존 시트에 덧붙입니다. */
+function migrateColumns() {
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+  ensureSheet(book, SHEET_LINKS, LINK_COLS);
+  ensureSheet(book, SHEET_USERS, USER_COLS);
+  SpreadsheetApp.getUi().alert('완료', '시트 열을 최신 상태로 맞췄습니다.', SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
 function installHub() {
@@ -105,11 +118,13 @@ function installHub() {
 
   var cfg = book.getSheetByName(SHEET_CONFIG);
   if (cfg.getLastRow() < 2) {
-    cfg.getRange(2, 1, 4, 2).setValues([
-      ['siteTitle', '경북여상 업무 허브'],
+    cfg.getRange(2, 1, 6, 2).setValues([
+      ['siteTitle', '경북여상 교무실 업무 허브'],
       ['year', '2026학년도'],
       ['notice', '구글시트는 [공유 > 링크가 있는 모든 사용자 > 편집자]로 설정한 뒤 등록해 주세요.'],
-      ['depts', DEPTS.join(', ')]
+      ['depts', DEPTS.join(', ')],
+      ['siteUrl', 'https://knuekim91.github.io/gbgc/'],
+      ['requireLogin', '']
     ]);
   }
 
@@ -120,7 +135,7 @@ function installHub() {
       counter[s[0]] = (counter[s[0]] || 0) + 10;
       return [
         newId(), s[0], s[1], s[2], detectType(s[2]),
-        s[4] || '', s[3] || '', counter[s[0]], 'Y', '(초기이전)', now()
+        s[4] || '', s[3] || '', counter[s[0]], 'Y', '(초기이전)', now(), '', ''
       ];
     });
     links.getRange(2, 1, rows.length, LINK_COLS.length).setValues(rows);
@@ -144,7 +159,7 @@ function addAdminAccount() {
   if (findUser(name)) {
     updateUserRow(name, { role: 'admin', dept: '', updatedAt: now() });
   } else {
-    sheet(SHEET_USERS).appendRow([name, '', 'admin', salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now()]);
+    sheet(SHEET_USERS).appendRow([name, '', 'admin', salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), '']);
   }
   ui.alert('완료', name + ' 님을 관리자로 등록했습니다.\n초기 비밀번호: ' + DEFAULT_PASSWORD + '\n\n첫 로그인 후 비밀번호를 꼭 변경해 주세요.', ui.ButtonSet.OK);
 }
@@ -161,11 +176,12 @@ function resetDepts() {
 function ensureSheet(book, name, headers) {
   var sh = book.getSheetByName(name);
   if (!sh) sh = book.insertSheet(name);
-  var first = sh.getRange(1, 1, 1, headers.length).getValues()[0];
-  if (String(first[0]).trim() !== headers[0]) {
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  if (sh.getMaxColumns() < headers.length) {
+    sh.insertColumnsAfter(sh.getMaxColumns(), headers.length - sh.getMaxColumns());
   }
-  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#f1f3f4');
+  // 열은 뒤에만 덧붙이므로 머리글을 항상 덮어써도 기존 데이터는 그대로입니다.
+  sh.getRange(1, 1, 1, headers.length).setValues([headers])
+    .setFontWeight('bold').setBackground('#f1f3f4');
   sh.setFrozenRows(1);
   return sh;
 }
