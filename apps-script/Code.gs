@@ -157,7 +157,17 @@ function actLogin(req) {
   if (!u) throw new Error('등록되지 않은 이름입니다. 관리자에게 문의해 주세요.');
   if (hashPassword(pw, u.salt) !== u.hash) throw new Error('비밀번호가 올바르지 않습니다.');
 
-  return { ok: true, token: makeToken(u.name), me: publicUser(u) };
+  // Apps Script 왕복 한 번이 1초 넘게 걸리므로, 화면이 바로 필요로 하는
+  // 목록·부서·설정을 로그인 응답에 함께 실어 보냅니다. (요청 2번 → 1번)
+  return {
+    ok: true,
+    token: makeToken(u.name),
+    me: publicUser(u),
+    config: readConfig(),
+    links: readLinks(),
+    depts: deptList(),
+    locked: false
+  };
 }
 
 function actMe(req) {

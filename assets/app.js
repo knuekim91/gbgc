@@ -332,7 +332,20 @@
 
   function bootstrap() {
     if (!API) return showSetupHelp();
-    return api('bootstrap').then(function (d) {
+    return api('bootstrap').then(applyBoot).catch(function (e) {
+      var el = $('#state');
+      el.className = 'state error';
+      el.hidden = false;
+      el.textContent = '데이터를 불러오지 못했습니다.\n' + e.message;
+    });
+  }
+
+  /**
+   * 서버가 준 전체 상태를 화면에 반영합니다.
+   * Apps Script 왕복이 한 번에 1초 넘게 걸리므로, 로그인 응답에도
+   * 같은 내용을 담아 보내 두 번 부르지 않게 했습니다.
+   */
+  function applyBoot(d) {
       state.links = d.links || [];
       state.depts = d.depts || [];
       state.config = d.config || {};
@@ -365,12 +378,6 @@
       if (state.me && state.me.mustChange) {
         toast('초기 비밀번호를 사용 중입니다. 이름 버튼 → 비밀번호를 변경해 주세요.');
       }
-    }).catch(function (e) {
-      var el = $('#state');
-      el.className = 'state error';
-      el.hidden = false;
-      el.textContent = '데이터를 불러오지 못했습니다.\n' + e.message;
-    });
   }
 
   // 수합 현황은 대상 시트를 여느라 느리므로 화면을 먼저 그린 뒤 따로 불러옵니다.
@@ -544,9 +551,14 @@
     showErr(f, '');
     // 세션이 실제로 붙은 것을 확인한 다음에 창을 닫습니다.
     // 먼저 닫아 버리면 세션 확인이 실패했을 때 아무 안내 없이 로그아웃 상태로 돌아갑니다.
+    var ok = f.querySelector('button[value="ok"]');
+    ok.disabled = true;
+    ok.textContent = '확인 중…';
+
+    // 로그인 응답에 목록까지 함께 오므로 bootstrap 을 또 부르지 않습니다.
     api('login', { name: f.name.value, password: f.password.value }).then(function (d) {
       store(LS.token, d.token);
-      return bootstrap();
+      applyBoot(d);
     }).then(function () {
       if (!state.me) {
         throw new Error('로그인은 되었지만 세션을 확인하지 못했습니다.\n' +
@@ -559,6 +571,9 @@
     }).catch(function (err) {
       store(LS.token, null);
       showErr(f, err.message);
+    }).then(function () {
+      ok.disabled = false;
+      ok.textContent = '로그인';
     });
   });
 
