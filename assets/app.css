@@ -346,6 +346,9 @@ code {
 }
 .dlg::backdrop { background: rgba(9,12,16,.5); backdrop-filter: blur(2px); }
 
+/* 내 계정은 표가 들어가 조금 더 넓게 씁니다. */
+#dlgAccount { width: min(620px, calc(100vw - 32px)); }
+
 .dlg-body {
   padding: 22px; display: flex; flex-direction: column; gap: 13px;
   overflow-y: auto; max-height: inherit;
@@ -415,6 +418,69 @@ input:focus, select:focus, textarea:focus {
   background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent);
 }
 
+/* ── 내 계정: 테두리로 구분한 블록 ───────────── */
+
+.panel {
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 15px 17px; background: var(--panel-2);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.panel > h3 {
+  margin: 0; padding: 0; border: 0;
+  font-size: 14px; font-weight: 700; color: var(--ink);
+  display: flex; align-items: center; gap: 7px;
+}
+.panel .hint { margin: 0; }
+
+.req {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .02em;
+  background: var(--danger); color: #fff;
+  border-radius: 4px; padding: 1px 6px;
+}
+
+/* 부서 고르기 버튼 */
+.pickers { display: flex; flex-wrap: wrap; gap: 6px; }
+.pick {
+  cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 500;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
+  border-radius: 999px; padding: 6px 13px;
+  transition: background .14s, color .14s, border-color .14s;
+}
+.pick:hover { border-color: var(--dept); color: var(--dept); }
+.pick.on {
+  background: var(--dept); border-color: var(--dept); color: #fff; font-weight: 600;
+}
+.pick.on::before { content: '✓ '; }
+
+/* 가입한 선생님 표 */
+.utable { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; }
+.uhead, .urow {
+  display: grid; grid-template-columns: 1fr 1fr 1.2fr auto auto;
+  gap: 8px; align-items: center; padding: 6px 9px; border-radius: 7px;
+}
+.uhead {
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+  position: sticky; top: 0; background: var(--panel-2); z-index: 1;
+}
+.urow { background: var(--panel); font-size: 13px; }
+.urow:hover { background: var(--line-2); }
+.uname { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.udept, .ulast { color: var(--ink-2); font-size: 12.5px; overflow-wrap: anywhere; }
+.ulast { font-variant-numeric: tabular-nums; }
+.ulast .ago { color: var(--ink-3); font-size: 11.5px; }
+.ulast .never { color: var(--ink-3); }
+.badge {
+  font-size: 10px; font-weight: 600; border-radius: 4px; padding: 1px 5px;
+  background: var(--line-2); color: var(--ink-2);
+}
+.badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+
+@media (max-width: 560px) {
+  .uhead { display: none; }
+  .urow { grid-template-columns: 1fr auto auto; row-gap: 2px; }
+  .urow .udept, .urow .ulast { grid-column: 1 / -1; }
+}
+
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; margin: 0; font-size: 13.5px; }
 .kv dt { color: var(--ink-3); font-size: 12.5px; }
 .kv dd { margin: 0; }
@@ -434,17 +500,9 @@ input:focus, select:focus, textarea:focus {
 .track-target { max-width: 160px; }
 .track-box .hint { margin: 0; }
 
-/* 즐겨찾기 바에 끌어다 놓는 북마클릿 */
-.bookmarklet {
-  align-self: flex-start; text-decoration: none;
-  background: var(--accent); color: var(--accent-ink);
-  border-color: transparent; cursor: grab;
-}
-.bookmarklet:active { cursor: grabbing; }
 
-.userform { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; align-items: center; }
-.userform input, .userform select, .userform button { font-size: 13px; padding: 7px 9px; }
-.userform input[name="email"] { grid-column: 1 / -1; }
+
+
 
 .userlist { display: flex; flex-direction: column; gap: 3px; max-height: 220px; overflow-y: auto; }
 .urow {
@@ -474,6 +532,5 @@ input:focus, select:focus, textarea:focus {
   .detail { grid-template-columns: 1fr; gap: 2px; }
   .detail dt { margin-top: 6px; }
   .row2 { grid-template-columns: 1fr; }
-  .userform { grid-template-columns: 1fr 1fr; }
   .brand-text strong { font-size: 15px; }
 }

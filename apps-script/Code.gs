@@ -22,7 +22,7 @@ var HASH_ROUNDS = 600;
 // track / target / email 은 뒤에 덧붙였습니다. 기존 시트를 쓰던 중이라면
 // 메뉴 [경북여상 허브 > 시트 열 최신화] 를 한 번 실행해 주세요.
 var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc'];
-var USER_COLS = ['name','dept','role','salt','hash','mustChange','updatedAt','email'];
+var USER_COLS = ['name','dept','role','salt','hash','mustChange','updatedAt','email','lastLogin'];
 var TEACHER_COLS = ['name','dept','title','group'];
 
 /* ===================== 진입점 ===================== */
@@ -54,6 +54,7 @@ function handle(req) {
       case 'me':             return json(actMe(req));
       case 'changePassword': return json(actChangePassword(req));
       case 'saveMyEmail':    return json(actSaveMyEmail(req));
+      case 'saveMyDepts':    return json(actSaveMyDepts(req));
       case 'requestReset':   return json(actRequestReset(req));
       case 'confirmReset':   return json(actConfirmReset(req));
       case 'saveLink':       return json(actSaveLink(req));
@@ -173,12 +174,15 @@ function actLogin(req) {
     var salt = newSalt();
     sheet(SHEET_USERS).appendRow([
       String(t.name).trim(), String(t.dept || '').trim(), 'teacher',
-      salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), ''
+      salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), '', ''
     ]);
     u = findUser(name);
   }
 
   if (hashPassword(pw, u.salt) !== u.hash) throw new Error('비밀번호가 올바르지 않습니다.');
+
+  updateUserRow(u.name, { lastLogin: now() });
+  u = findUser(u.name);
 
   // Apps Script 왕복 한 번이 1초 넘게 걸리므로, 화면이 바로 필요로 하는
   // 목록·부서·설정을 로그인 응답에 함께 실어 보냅니다. (요청 2번 → 1번)
@@ -219,6 +223,18 @@ function actSaveMyEmail(req) {
     throw new Error('이메일 형식이 올바르지 않습니다.');
   }
   updateUserRow(me.name, { email: email, updatedAt: now() });
+  return { ok: true, me: publicUser(findUser(me.name)) };
+}
+
+/** 본인이 맡은 부서를 직접 고릅니다. 그 부서의 업무만 편집할 수 있게 됩니다. */
+function actSaveMyDepts(req) {
+  var me = requireUser(req);
+  var all = deptList();
+  var picked = (req.depts || [])
+    .map(function (d) { return String(d).trim(); })
+    .filter(function (d) { return all.indexOf(d) >= 0; });
+
+  updateUserRow(me.name, { dept: picked.join(', '), updatedAt: now() });
   return { ok: true, me: publicUser(findUser(me.name)) };
 }
 
@@ -405,7 +421,7 @@ function actSaveUser(req) {
     updateUserRow(name, { dept: dept, role: role, email: email, updatedAt: now() });
   } else {
     var salt = newSalt();
-    sheet(SHEET_USERS).appendRow([name, dept, role, salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), email]);
+    sheet(SHEET_USERS).appendRow([name, dept, role, salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), email, '']);
   }
   return { ok: true, users: readSheet(sheet(SHEET_USERS), USER_COLS).map(publicUser) };
 }
@@ -667,6 +683,11 @@ function asDateText(v) {
   return String(v == null ? '' : v);
 }
 
+function asDateTimeText(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, tz(), 'yyyy-MM-dd HH:mm');
+  return String(v == null ? '' : v);
+}
+
 function readConfig() {
   var values = sheet(SHEET_CONFIG).getDataRange().getValues();
   var o = {};
@@ -725,6 +746,7 @@ function publicUser(u) {
     dept: String(u.dept || ''),
     role: u.role === 'admin' ? 'admin' : 'teacher',
     email: String(u.email || '').trim(),
+    lastLogin: asDateTimeText(u.lastLogin),
     mustChange: String(u.mustChange || '').toUpperCase() === 'Y'
   };
 }

@@ -438,7 +438,6 @@
       return '<option value="' + esc(d) + '">' + esc(d) + '</option>';
     }).join('');
     $('#linkForm select[name=dept]').innerHTML = opts;
-    $('#deptOptions').innerHTML = opts;
   }
 
   /* ── 이벤트 ───────────────────────── */
@@ -727,13 +726,12 @@
     showErr($('#emailForm'), '');
     $('#acctName').textContent = me.name;
     $('#acctRole').textContent = me.role === 'admin' ? '관리자 (전체 부서)' : '부서 담당';
-    $('#acctDept').textContent = me.role === 'admin' ? '전체' : (me.dept || '-');
     showErr($('#pwForm'), '');
     $('#pwForm').reset();
     $('#firstLogin').hidden = !me.mustChange;
     if (me.mustChange) $('#pwForm').current.value = '2026';
 
-    buildBookmarklet();
+    renderMyDepts();
 
     var isAdmin = me.role === 'admin';
     $('#adminPane').hidden = !isAdmin;
@@ -741,16 +739,50 @@
     $('#dlgAccount').showModal();
   }
 
-  // 구글시트를 보다가 한 번에 등록할 수 있는 즐겨찾기 버튼을 만듭니다.
-  function buildBookmarklet() {
-    var home = location.origin + location.pathname;
-    var code =
-      "javascript:(function(){" +
-        "var t=document.title.replace(/\\s*[-–]\\s*Google\\s+(Sheets|Docs|Drive|Forms|Slides).*$/i,'').trim();" +
-        "window.open('" + home + "?add=1&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(t),'_blank');" +
-      "})()";
-    $('#bookmarklet').setAttribute('href', code);
+  /* 내가 맡은 부서 — 눌러서 넣고, 다시 눌러서 뺍니다. */
+  function renderMyDepts() {
+    var mine = myOwnDepts();
+    $('#myDepts').innerHTML = state.depts.map(function (d) {
+      var on = mine.indexOf(d) >= 0;
+      return '<button class="pick' + (on ? ' on' : '') + '" type="button" data-dept="' + esc(d) + '"' +
+        ' aria-pressed="' + on + '" style="--dept:' + deptColor(d) + '">' + esc(d) + '</button>';
+    }).join('');
+
+    $('#myDeptsNote').textContent = state.me && state.me.role === 'admin'
+      ? '관리자는 고르지 않아도 모든 부서를 편집할 수 있습니다.'
+      : (mine.length ? '고른 부서: ' + mine.join(', ') : '아직 고른 부서가 없습니다.');
   }
+
+  /** 관리자여도 "직접 고른 부서"만 돌려줍니다. (myDepts 는 편집 권한 기준) */
+  function myOwnDepts() {
+    if (!state.me) return [];
+    return String(state.me.dept || '').split(',')
+      .map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  $('#myDepts').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-dept]');
+    if (!b) return;
+
+    var mine = myOwnDepts();
+    var at = mine.indexOf(b.dataset.dept);
+    if (at < 0) mine.push(b.dataset.dept); else mine.splice(at, 1);
+
+    // 응답을 기다리지 않고 먼저 칠해 둡니다. 실패하면 되돌립니다.
+    var before = state.me.dept;
+    state.me.dept = mine.join(', ');
+    renderMyDepts();
+
+    api('saveMyDepts', { depts: mine }).then(function (d) {
+      state.me = d.me;
+      renderMyDepts();
+      renderAll();
+    }).catch(function (err) {
+      state.me.dept = before;
+      renderMyDepts();
+      toast(err.message, true);
+    });
+  });
 
   $('#acctClose').addEventListener('click', function () { $('#dlgAccount').close(); });
 
@@ -781,48 +813,45 @@
       .catch(function (err) { toast(err.message, true); });
   }
 
-  function renderUsers() {
-    $('#userList').innerHTML = state.users.map(function (u) {
-      return '<div class="urow">' +
-        '<b>' + esc(u.name) + '</b>' +
-        '<span class="grow">' + (u.role === 'admin' ? '관리자' : esc(u.dept || '부서 없음')) +
-          (u.email ? ' · ✉' : '') + (u.mustChange ? ' · 초기 비밀번호' : '') + '</span>' +
-        '<button class="tool" type="button" data-reset="' + esc(u.name) + '" title="비밀번호 초기화">↺</button>' +
-        '<button class="tool" type="button" data-udel="' + esc(u.name) + '" title="삭제">🗑</button>' +
-      '</div>';
-    }).join('') || '<p class="hint">등록된 사용자가 없습니다.</p>';
+  /** 최근 로그인 — 날짜와 함께 "오늘/어제/N일 전"을 덧붙입니다. */
+  function loginAgo(text) {
+    if (!text) return '<span class="never">기록 없음</span>';
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(text));
+    if (!m) return esc(text);
+
+    var then = new Date(+m[1], +m[2] - 1, +m[3]);
+    var today = new Date();
+    today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    var days = Math.round((today - then) / 86400000);
+    var ago = days <= 0 ? '오늘' : days === 1 ? '어제' : days + '일 전';
+
+    return esc(String(text).slice(2)) + ' <span class="ago">' + ago + '</span>';
   }
 
-  $('#userForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var f = e.target;
-    api('saveUser', {
-      user: {
-        name: f.name.value.trim(), dept: f.dept.value.trim(),
-        role: f.role.value, email: f.email.value.trim()
-      }
-    })
-      .then(function (d) {
-        state.users = d.users; renderUsers(); f.reset();
-        toast('저장했습니다 (초기 비밀번호 2026)');
-      })
-      .catch(function (err) { toast(err.message, true); });
-  });
+  function renderUsers() {
+    if (!state.users.length) {
+      $('#userList').innerHTML = '<p class="hint">아직 로그인한 선생님이 없습니다.</p>';
+      return;
+    }
+    $('#userList').innerHTML =
+      '<div class="uhead"><span>이름</span><span>부서</span><span>최근 로그인</span><span></span><span></span></div>' +
+      state.users.map(function (u) {
+        return '<div class="urow">' +
+          '<span class="uname">' + esc(u.name) +
+            (u.role === 'admin' ? '<span class="badge">관리자</span>' : '') +
+            (u.mustChange ? '<span class="badge warn">초기 비번</span>' : '') +
+            (u.email ? '' : '<span class="badge warn">메일 없음</span>') +
+          '</span>' +
+          '<span class="udept">' + esc(u.dept || '—') + '</span>' +
+          '<span class="ulast">' + loginAgo(u.lastLogin) + '</span>' +
+          '<button class="tool" type="button" data-reset="' + esc(u.name) + '" title="비밀번호 초기화">↺</button>' +
+          '<button class="tool" type="button" data-udel="' + esc(u.name) + '" title="계정 삭제">🗑</button>' +
+        '</div>';
+      }).join('');
+  }
 
   $('#userList').addEventListener('click', function (e) {
     var el;
-    // 이름을 누르면 위 입력칸에 그대로 채워 넣어 바로 고칠 수 있게 합니다.
-    if (!e.target.closest('button') && (el = e.target.closest('.urow'))) {
-      var name = el.querySelector('b').textContent;
-      var u = state.users.filter(function (x) { return x.name === name; })[0];
-      if (u) {
-        var f = $('#userForm');
-        f.name.value = u.name; f.dept.value = u.dept;
-        f.role.value = u.role; f.email.value = u.email || '';
-        f.name.focus();
-      }
-      return;
-    }
     if ((el = e.target.closest('[data-reset]'))) {
       if (!confirm(el.dataset.reset + ' 님의 비밀번호를 2026 으로 초기화할까요?')) return;
       api('resetPassword', { name: el.dataset.reset })

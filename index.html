@@ -164,28 +164,22 @@
     <dl class="kv">
       <dt>이름</dt><dd id="acctName">-</dd>
       <dt>권한</dt><dd id="acctRole">-</dd>
-      <dt>담당 부서</dt><dd id="acctDept">-</dd>
     </dl>
 
     <p id="firstLogin" class="firstrun" hidden>
       <b>처음 로그인하셨습니다.</b>
-      지금 비밀번호를 새로 정해 주세요. 초기 비밀번호 <code>2026</code> 은 모두가 아는 값입니다.
+      아래에서 <b>맡은 부서</b>를 고르고, <b>이메일</b>과 <b>새 비밀번호</b>를 정해 주세요.
+      초기 비밀번호 <code>2026</code> 은 모두가 아는 값입니다.
     </p>
 
-    <form id="emailForm" class="stack">
-      <h3>내 이메일</h3>
-      <p class="hint">
-        비밀번호를 잊었을 때 <b>본인이 직접 재설정</b>할 수 있게 해 줍니다.
-        마감 알림도 이 주소로 갑니다. 넣지 않으시면 관리자에게 초기화를 요청하셔야 합니다.
-      </p>
-      <div class="inline">
-        <input name="email" type="email" placeholder="예) hong@dge.go.kr" autocomplete="email">
-        <button class="btn btn-primary" type="submit">저장</button>
-      </div>
-      <p class="err" data-err hidden></p>
-    </form>
+    <section class="panel">
+      <h3>내가 맡은 부서</h3>
+      <p class="hint">맡으신 부서를 눌러 주세요. 다시 누르면 빠집니다. 여러 개 고르셔도 됩니다.</p>
+      <div id="myDepts" class="pickers"></div>
+      <p class="hint" id="myDeptsNote"></p>
+    </section>
 
-    <form id="pwForm" class="stack">
+    <form id="pwForm" class="panel stack">
       <h3>비밀번호 변경</h3>
       <label>현재 비밀번호 <input name="current" type="password" required autocomplete="current-password"></label>
       <label>새 비밀번호 <input name="next" type="password" required minlength="4" autocomplete="new-password"></label>
@@ -194,32 +188,27 @@
       <button class="btn btn-primary" type="submit">비밀번호 변경</button>
     </form>
 
-    <h3>빠른 등록 도구</h3>
-    <p class="hint">
-      아래 버튼을 브라우저 <b>즐겨찾기 바로 끌어다 놓으세요.</b>
-      구글시트를 보다가 그 버튼을 누르면 제목과 주소가 채워진 업무 추가 창이 바로 열립니다.
-    </p>
-    <a id="bookmarklet" class="btn bookmarklet" href="#" draggable="true">＋ 허브에 등록</a>
-
-    <div id="adminPane" hidden>
-      <h3>사용자 관리 <span class="muted small">(관리자)</span></h3>
-      <form id="userForm" class="userform">
-        <input name="name" placeholder="선생님 이름" required>
-        <input name="dept" list="deptOptions" placeholder="담당 부서" autocomplete="off">
-        <datalist id="deptOptions"></datalist>
-        <select name="role">
-          <option value="teacher">부서 담당</option>
-          <option value="admin">관리자</option>
-        </select>
-        <input name="email" type="email" placeholder="이메일 (마감 알림용, 선택)">
-        <button class="btn btn-primary" type="submit">추가 / 수정</button>
-      </form>
+    <form id="emailForm" class="panel stack">
+      <h3>비밀번호 복구용 이메일 <span class="req">필수</span></h3>
       <p class="hint">
-        부서를 여러 개 맡으시면 쉼표로 구분해 적어 주세요 (예: <code>연구부, 전문교육부</code>).
-        이메일을 넣으면 마감 1~2일 전 알림 메일을 받으실 수 있습니다.
+        비밀번호를 잊었을 때 <b>본인이 직접 되찾는 유일한 방법</b>입니다.
+        넣지 않으시면 관리자 선생님께 초기화를 부탁하셔야 합니다. 마감 알림도 이 주소로 갑니다.
       </p>
-      <div id="userList" class="userlist"></div>
-    </div>
+      <div class="inline">
+        <input name="email" type="email" placeholder="예) hong@dge.go.kr" autocomplete="email">
+        <button class="btn btn-primary" type="submit">저장</button>
+      </div>
+      <p class="err" data-err hidden></p>
+    </form>
+
+    <section id="adminPane" class="panel" hidden>
+      <h3>가입한 선생님 <span class="muted small">(관리자)</span></h3>
+      <div class="utable" id="userList"></div>
+      <p class="hint">
+        <b>↺</b> 는 비밀번호를 <code>2026</code> 으로 되돌리고, <b>🗑</b> 는 계정을 지웁니다.
+        지워도 <code>teachers</code> 명단에 있으면 다시 로그인할 수 있습니다.
+      </p>
+    </section>
 
     <menu>
       <button class="btn btn-ghost" id="logoutBtn" type="button">로그아웃</button>
