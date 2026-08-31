@@ -61,7 +61,7 @@
   var DEPT_HUE = {
     '교무부': 25, '연구부': 35, '학생부': 45, '진로창체부': 330, '기본학력방과후부': 270,
     '복지상담부': 300, '특성화교육과정부': 210, '산학협력부': 195, '전문교육부': 145,
-    '인성학부모부': 15, '수평공동체': 345, '1학년': 55, '2학년': 85, '자료실': 220
+    '인성학부모부': 15, '수평공동체': 345, '1학년': 55, '2학년': 85, '3학년': 110, '자료실': 220
   };
 
   function deptColor(name) {
@@ -376,7 +376,8 @@
       loadProgress();
       handleQuickAdd();
       if (state.me && state.me.mustChange) {
-        toast('초기 비밀번호를 사용 중입니다. 이름 버튼 → 비밀번호를 변경해 주세요.');
+        // 초기 비밀번호는 모두가 아는 값이므로 바로 바꾸도록 안내합니다.
+        setTimeout(openAccount, 400);
       }
   }
 
@@ -657,6 +658,8 @@
     $('#acctDept').textContent = me.role === 'admin' ? '전체' : (me.dept || '-');
     showErr($('#pwForm'), '');
     $('#pwForm').reset();
+    $('#firstLogin').hidden = !me.mustChange;
+    if (me.mustChange) $('#pwForm').current.value = '2026';
 
     buildBookmarklet();
 
@@ -696,6 +699,7 @@
       state.me = d.me;
       f.reset();
       $('#dlgAccount').close();
+      $('#firstLogin').hidden = true;
       toast('비밀번호를 변경했습니다');
     }).catch(function (err) { showErr(f, err.message); });
   });

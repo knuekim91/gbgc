@@ -17,7 +17,7 @@ var ADMIN_NAME = '';
 var DEPTS = [
   '교무부', '연구부', '학생부', '진로창체부', '기본학력방과후부', '복지상담부',
   '특성화교육과정부', '산학협력부', '전문교육부', '인성학부모부', '수평공동체',
-  '1학년', '2학년', '자료실'
+  '1학년', '2학년', '3학년', '자료실'
 ];
 
 // Notion "🏫 경북여상 공유시트 모음" 페이지에서 옮겨온 초기 데이터입니다.
@@ -113,6 +113,7 @@ function migrateColumns() {
   var book = SpreadsheetApp.getActiveSpreadsheet();
   ensureSheet(book, SHEET_LINKS, LINK_COLS);
   ensureSheet(book, SHEET_USERS, USER_COLS);
+  ensureSheet(book, SHEET_TEACHERS, TEACHER_COLS);
   say('완료', '시트 열을 최신 상태로 맞췄습니다.');
 }
 
@@ -157,7 +158,7 @@ function migrateColumnsFromMenu() {
 function checkSetup() {
   var book = SpreadsheetApp.getActiveSpreadsheet();
   var out = [];
-  [SHEET_LINKS, SHEET_USERS, SHEET_CONFIG].forEach(function (n) {
+  [SHEET_LINKS, SHEET_USERS, SHEET_CONFIG, SHEET_TEACHERS].forEach(function (n) {
     var sh = book.getSheetByName(n);
     out.push(n + ' 시트: ' + (sh ? (sh.getLastRow() - 1) + '행' : '없음'));
   });
@@ -181,6 +182,7 @@ function installHub() {
   ensureSheet(book, SHEET_LINKS, LINK_COLS);
   ensureSheet(book, SHEET_USERS, USER_COLS);
   ensureSheet(book, SHEET_CONFIG, ['key', 'value']);
+  ensureSheet(book, SHEET_TEACHERS, TEACHER_COLS);
 
   var cfg = book.getSheetByName(SHEET_CONFIG);
   if (cfg.getLastRow() < 2) {

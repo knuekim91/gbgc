@@ -10,9 +10,10 @@
  * 설치 방법: apps-script/설치안내.md 참고
  */
 
-var SHEET_LINKS  = 'links';
-var SHEET_USERS  = 'users';
-var SHEET_CONFIG = 'config';
+var SHEET_LINKS    = 'links';
+var SHEET_USERS    = 'users';
+var SHEET_CONFIG   = 'config';
+var SHEET_TEACHERS = 'teachers';   // 로그인 허용 명단 (교직원 비상연락망에서 가져옴)
 
 var DEFAULT_PASSWORD = '2026';
 var TOKEN_HOURS = 12;
@@ -22,6 +23,7 @@ var HASH_ROUNDS = 600;
 // 메뉴 [경북여상 허브 > 시트 열 최신화] 를 한 번 실행해 주세요.
 var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc'];
 var USER_COLS = ['name','dept','role','salt','hash','mustChange','updatedAt','email'];
+var TEACHER_COLS = ['name','dept','title','group'];
 
 /* ===================== 진입점 ===================== */
 
@@ -154,7 +156,25 @@ function actLogin(req) {
   if (!name || !pw) throw new Error('이름과 비밀번호를 입력해 주세요.');
 
   var u = findUser(name);
-  if (!u) throw new Error('등록되지 않은 이름입니다. 관리자에게 문의해 주세요.');
+
+  // 계정이 아직 없으면 teachers 명단을 봅니다.
+  // 명단에 있는 분이 초기 비밀번호로 들어오면 그 자리에서 계정을 만들어 드립니다.
+  if (!u) {
+    var t = findTeacher(name);
+    if (!t) {
+      throw new Error('교직원 명단에 없는 이름입니다.\n띄어쓰기 없이 정확히 입력했는지 확인해 주세요.');
+    }
+    if (pw !== DEFAULT_PASSWORD) {
+      throw new Error('처음 로그인하실 때는 초기 비밀번호 ' + DEFAULT_PASSWORD + ' 을 입력해 주세요.');
+    }
+    var salt = newSalt();
+    sheet(SHEET_USERS).appendRow([
+      String(t.name).trim(), String(t.dept || '').trim(), 'teacher',
+      salt, hashPassword(DEFAULT_PASSWORD, salt), 'Y', now(), ''
+    ]);
+    u = findUser(name);
+  }
+
   if (hashPassword(pw, u.salt) !== u.hash) throw new Error('비밀번호가 올바르지 않습니다.');
 
   // Apps Script 왕복 한 번이 1초 넘게 걸리므로, 화면이 바로 필요로 하는
@@ -570,6 +590,20 @@ function findUser(name) {
   var key = String(name || '').trim();
   for (var i = 0; i < rows.length; i++) {
     if (String(rows[i].name).trim() === key) return rows[i];
+  }
+  return null;
+}
+
+/** 로그인 허용 명단에서 찾습니다. 띄어쓰기는 무시합니다. */
+function findTeacher(name) {
+  var book = ss();
+  var sh = book.getSheetByName(SHEET_TEACHERS);
+  if (!sh) return null;                       // 명단 시트가 없으면 이 기능은 꺼진 셈입니다
+
+  var key = String(name || '').replace(/\s+/g, '');
+  var rows = readSheet(sh, TEACHER_COLS);
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i].name).replace(/\s+/g, '') === key) return rows[i];
   }
   return null;
 }
