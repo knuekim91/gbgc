@@ -325,6 +325,7 @@ function actSaveLink(req) {
   var link = req.link || {};
   var dept = String(link.dept || '').trim();
   if (!dept) throw new Error('부서를 선택해 주세요.');
+  assertHasEmail(me);
   assertCanEdit(me, dept);
 
   var title = String(link.title || '').trim();
@@ -372,6 +373,7 @@ function actSaveLink(req) {
 
 function actDeleteLink(req) {
   var me = requireUser(req);
+  assertHasEmail(me);
   var id = String(req.id || '');
   var sh = sheet(SHEET_LINKS);
   var rows = readSheet(sh, LINK_COLS);
@@ -388,6 +390,7 @@ function actDeleteLink(req) {
 function actReorder(req) {
   var me = requireUser(req);
   var dept = String(req.dept || '');
+  assertHasEmail(me);
   assertCanEdit(me, dept);
   var ids = req.ids || [];
   var sh = sheet(SHEET_LINKS);
@@ -577,6 +580,17 @@ function requireAdmin(req) {
   var u = requireUser(req);
   if (u.role !== 'admin') throw new Error('관리자만 사용할 수 있는 기능입니다.');
   return u;
+}
+
+/**
+ * 업무를 고치려면 복구용 이메일이 있어야 합니다.
+ * 비밀번호를 잊었을 때 되찾을 길이 없는 계정을 남기지 않으려는 것입니다.
+ */
+function assertHasEmail(user) {
+  if (!String(user.email || '').trim()) {
+    throw new Error('먼저 복구용 이메일을 등록해 주세요.\n' +
+                    '오른쪽 위 이름 → [비밀번호 복구용 이메일] 에 주소를 넣고 저장하시면 됩니다.');
+  }
 }
 
 function assertCanEdit(user, dept) {

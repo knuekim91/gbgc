@@ -202,6 +202,12 @@ code {
   border-radius: 10px; font-size: 13px;
 }
 
+.needemail {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.needemail .btn { flex-shrink: 0; }
+
 .state { padding: 56px 0; text-align: center; color: var(--ink-2); font-size: 14px; }
 .state.error { color: var(--danger); white-space: pre-wrap; }
 

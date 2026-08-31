@@ -130,8 +130,13 @@
     toast._t = setTimeout(function () { el.hidden = true; }, bad ? 4200 : 2400);
   }
 
+  /** 복구용 이메일이 없으면 아무것도 고칠 수 없습니다. */
+  function hasEmail() {
+    return !!(state.me && String(state.me.email || '').trim());
+  }
+
   function canEdit(dept) {
-    if (!state.me) return false;
+    if (!state.me || !hasEmail()) return false;
     if (state.me.role === 'admin') return true;
     return state.me.dept.split(',').map(function (s) { return s.trim(); }).indexOf(dept) >= 0;
   }
@@ -200,7 +205,7 @@
     });
 
     // 편집 권한이 있는데 아직 링크가 없는 부서도 카드로 보여 줍니다.
-    if (state.me && !state.q && (state.filter === 'all' || state.filter === 'mine')) {
+    if (state.me && hasEmail() && !state.q && (state.filter === 'all' || state.filter === 'mine')) {
       myDepts().forEach(function (d) {
         if (!index[d]) { index[d] = { dept: d, items: [] }; groups.push(index[d]); }
       });
@@ -323,7 +328,8 @@
       btn.textContent = '로그인';
       btn.classList.add('btn-ghost');
     }
-    $('#fab').hidden = !state.me;
+    $('#fab').hidden = !state.me || !hasEmail();
+    $('#needEmail').hidden = !state.me || hasEmail();
   }
 
   function renderAll() { renderChips(); renderBoard(); renderAuth(); }
@@ -711,12 +717,22 @@
     showErr(f, '');
     api('saveMyEmail', { email: f.email.value.trim() }).then(function (d) {
       state.me = d.me;
-      toast(d.me.email ? '이메일을 저장했습니다' : '이메일을 지웠습니다');
+      renderAll();
+      toast(d.me.email ? '이메일을 저장했습니다. 이제 업무를 추가하실 수 있습니다' : '이메일을 지웠습니다');
     }).catch(function (err) { showErr(f, err.message); });
   });
 
   $$('[data-close]').forEach(function (b) {
     b.addEventListener('click', function () { $('#' + b.dataset.close).close(); });
+  });
+
+  $('#goEmail').addEventListener('click', function () {
+    openAccount();
+    setTimeout(function () {
+      var box = $('#emailForm');
+      box.scrollIntoView({ block: 'center' });
+      box.email.focus();
+    }, 120);
   });
 
   // 내 계정
