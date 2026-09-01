@@ -273,6 +273,100 @@ code {
 .state { padding: 56px 0; text-align: center; color: var(--ink-2); font-size: 14px; }
 .state.error { color: var(--danger); white-space: pre-wrap; }
 
+/* ── 마감일 캘린더 ───────────────────────── */
+
+.calbar {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 16px; padding: 9px 14px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.calbar-label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+
+.calpick {
+  cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink-2);
+  border-radius: 999px; padding: 4px 13px;
+  transition: background .14s, color .14s, border-color .14s;
+}
+.calpick:hover { border-color: var(--accent); color: var(--accent); }
+.calpick.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.calendar {
+  margin-top: 16px; padding: 13px 15px 15px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+
+.cal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.cal-title { font-size: 14.5px; font-weight: 700; }
+.cal-span { font-size: 12px; font-weight: 500; color: var(--ink-3); margin-left: 6px; }
+.cal-tools { display: flex; align-items: center; gap: 7px; }
+
+.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-week { margin-bottom: 5px; }
+.cal-wd {
+  text-align: center; font-size: 11.5px; font-weight: 700; color: var(--ink-3);
+  padding: 2px 0;
+}
+.cal-wd.sun { color: #d0433a; }
+.cal-wd.sat { color: #2f6df6; }
+
+.cal-day {
+  border: 1px solid var(--line-2); border-radius: 8px;
+  padding: 5px 5px 6px; background: var(--panel-2);
+  display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+/* 2주는 넉넉하게, 4주는 조금 낮게 */
+.calendar.w2 .cal-day { min-height: 112px; }
+.calendar.w4 .cal-day { min-height: 82px; }
+
+.cal-day.past { opacity: .55; }
+.cal-day.today {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.cal-date {
+  font-size: 11.5px; font-weight: 700; color: var(--ink-2);
+  font-variant-numeric: tabular-nums; padding-left: 2px;
+}
+.cal-date.sun { color: #d0433a; }
+.cal-date.sat { color: #2f6df6; }
+.cal-day.today .cal-date { color: var(--accent); }
+
+.cal-ev {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  font: inherit; font-size: 11.5px; line-height: 1.45;
+  border: 0; border-radius: 5px; padding: 3px 5px;
+  background: var(--panel); color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cal-ev:hover { background: var(--line-2); }
+.cal-ev b { font-weight: 800; margin-right: 3px; }
+
+/* 캘린더에서 눌러 찾아간 업무를 잠깐 표시합니다. */
+.item.flash { animation: itemFlash 1.2s ease-out; }
+@keyframes itemFlash {
+  0%, 60% { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  100%    { background: transparent; }
+}
+
+@media (max-width: 720px) {
+  .cal-week, .cal-grid { gap: 3px; }
+  .cal-day { padding: 3px; }
+  .calendar.w2 .cal-day { min-height: 82px; }
+  .calendar.w4 .cal-day { min-height: 62px; }
+  .cal-ev { font-size: 10.5px; padding: 2px 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item.flash { animation: none; }
+}
+
 /* ── 보드 ───────────────────────────── */
 
 .board {

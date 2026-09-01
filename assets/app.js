@@ -3,11 +3,12 @@
   'use strict';
 
   var API = (window.HUB_CONFIG && window.HUB_CONFIG.apiUrl || '').trim();
-  var LS = { token: 'gbgc.token', fav: 'gbgc.fav', theme: 'gbgc.theme' };
+  var LS = { token: 'gbgc.token', fav: 'gbgc.fav', theme: 'gbgc.theme', cal: 'gbgc.cal' };
 
   var state = {
     links: [], depts: [], config: {}, me: null, users: [],
-    progress: {}, open: [], filter: 'all', q: ''
+    progress: {}, open: [], filter: 'all', q: '',
+    cal: store('gbgc.cal') || ''      // '' | '2' | '4' — 캘린더 보기 상태
   };
 
   var $  = function (s, r) { return (r || document).querySelector(s); };
@@ -480,7 +481,110 @@
     $('#needEmail').hidden = !state.me || hasEmail();
   }
 
-  function renderAll() { renderChips(); renderBoard(); renderAuth(); }
+  /* ── 마감일 캘린더 ───────────────────────── */
+
+  var WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+
+  function midnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function ymdKey(d) {
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) +
+           '-' + ('0' + d.getDate()).slice(-2);
+  }
+
+  /** 부서 이름을 두 글자로 줄입니다. 교무부 → 교무 */
+  function deptShort(name) { return String(name || '').slice(0, 2); }
+
+  function renderCalendar() {
+    var weeks = Number(state.cal) || 0;
+    $('#calBar').hidden = !!weeks;
+    $('#calendar').hidden = !weeks;
+    if (!weeks) return;
+
+    // 이번 주 일요일부터 시작합니다.
+    var today = midnight(new Date());
+    var start = addDays(today, -today.getDay());
+    var days = weeks * 7;
+
+    // 마감일이 있는 업무를 날짜별로 모읍니다. (지금 걸러 놓은 목록만)
+    var byDay = {};
+    visibleLinks().forEach(function (l) {
+      if (!l.deadline) return;
+      var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(l.deadline));
+      if (!m) return;
+      var key = m[1] + '-' + m[2] + '-' + m[3];
+      (byDay[key] = byDay[key] || []).push(l);
+    });
+
+    var last = addDays(start, days - 1);
+    var span = (start.getMonth() + 1) + '월 ' + start.getDate() + '일 – ' +
+               (last.getMonth() + 1) + '월 ' + last.getDate() + '일';
+
+    var head =
+      '<div class="cal-head">' +
+        '<div class="cal-title">📅 마감일 캘린더 <span class="cal-span">' + span + '</span></div>' +
+        '<div class="cal-tools">' +
+          '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-cal="2">2주</button>' +
+          '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-cal="4">4주</button>' +
+          '<button type="button" class="linklike" data-cal="">캘린더 숨기기</button>' +
+        '</div>' +
+      '</div>';
+
+    var names = '<div class="cal-week">' + WEEKDAY.map(function (w, i) {
+      return '<div class="cal-wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '') + '">' + w + '</div>';
+    }).join('') + '</div>';
+
+    var cells = '';
+    for (var i = 0; i < days; i++) {
+      var d = addDays(start, i);
+      var key = ymdKey(d);
+      var list = byDay[key] || [];
+      var isToday = d.getTime() === today.getTime();
+      var dow = d.getDay();
+
+      cells += '<div class="cal-day' + (isToday ? ' today' : '') +
+        (d < today ? ' past' : '') + '">' +
+        '<div class="cal-date' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') + '">' +
+          (d.getDate() === 1 ? (d.getMonth() + 1) + '/' : '') + d.getDate() +
+        '</div>' +
+        list.map(function (l) {
+          return '<button type="button" class="cal-ev" data-goto="' + esc(l.id) + '"' +
+            ' title="' + esc(l.dept + ' · ' + l.title) + '">' +
+            '<b style="color:' + deptColor(l.dept) + '">' + esc(deptShort(l.dept)) + '</b> ' +
+            esc(l.title) + '</button>';
+        }).join('') +
+      '</div>';
+    }
+
+    $('#calendar').className = 'calendar w' + weeks;
+    $('#calendar').innerHTML = head + names + '<div class="cal-grid">' + cells + '</div>';
+  }
+
+  // 보기 전환 · 숨기기
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-cal]');
+    if (!b) return;
+    state.cal = b.dataset.cal;
+    store(LS.cal, state.cal || null);
+    renderCalendar();
+  });
+
+  // 일정에서 업무로 이동
+  $('#calendar').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-goto]');
+    if (!b) return;
+    var id = b.dataset.goto;
+    if (state.open.indexOf(id) < 0) state.open.push(id);
+    renderBoard();
+    var li = $('.item[data-id="' + id + '"]');
+    if (li) {
+      li.scrollIntoView({ block: 'center' });
+      li.classList.add('flash');
+      setTimeout(function () { li.classList.remove('flash'); }, 1200);
+    }
+  });
+
+  function renderAll() { renderChips(); renderCalendar(); renderBoard(); renderAuth(); }
 
   /* ── 불러오기 ───────────────────────── */
 
