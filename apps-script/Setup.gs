@@ -15,10 +15,14 @@
 var ADMIN_NAME = '';
 
 var DEPTS = [
+  '교장', '교감',
   '교무부', '연구부', '학생부', '진로창체부', '기본학력방과후부', '복지상담부',
-  '특성화교육과정부', '산학협력부', '전문교육부', '인성학부모부', '수평공동체',
-  '1학년', '2학년', '3학년', '자료실'
+  '특성화교육과정부', '산학협력부', '전문교육부', '인성학부모부',
+  '1학년', '2학년', '3학년'
 ];
+
+/** 더 이상 쓰지 않는 부서. cleanupDepts 로 목록과 업무를 함께 정리합니다. */
+var RETIRED_DEPTS = ['수평공동체', '자료실'];
 
 // Notion "🏫 경북여상 공유시트 모음" 페이지에서 옮겨온 초기 데이터입니다.
 // [부서, 제목, URL, 마감일(선택), 메모(선택)]
@@ -104,8 +108,80 @@ function onOpen() {
     .addItem('마감 알림 자동 발송 끄기', 'disableReminderTrigger')
     .addSeparator()
     .addItem('시트 열 최신화', 'migrateColumnsFromMenu')
+    .addItem('없앨 부서 미리보기', 'previewDeptCleanup')
+    .addItem('없앨 부서 정리 (업무도 삭제)', 'cleanupDeptsFromMenu')
     .addItem('부서 목록 기본값으로 되돌리기', 'resetDepts')
     .addToUi();
+}
+
+/**
+ * 없앨 부서를 정리합니다 — 무엇이 지워지는지 먼저 보여 줍니다.
+ *
+ * 지우기 전에 반드시 이 함수를 먼저 실행해 실행 기록을 확인해 주세요.
+ * 실제 삭제는 cleanupDepts 입니다.
+ */
+function previewDeptCleanup() {
+  var rows = readSheet(sheet(SHEET_LINKS), LINK_COLS);
+  var doomed = rows.filter(function (r) {
+    return RETIRED_DEPTS.indexOf(String(r.dept).trim()) >= 0;
+  });
+
+  var text = '없앨 부서: ' + RETIRED_DEPTS.join(', ') + '\n' +
+             '함께 지워질 업무: ' + doomed.length + '건\n\n' +
+             doomed.map(function (r) { return '  · [' + r.dept + '] ' + r.title; }).join('\n') +
+             '\n\n새 부서 목록: ' + DEPTS.join(', ');
+  Logger.log(text);
+  return text;
+}
+
+/**
+ * 실제로 지웁니다. 되돌리려면 구글시트의 [파일 > 버전 기록] 을 쓰세요.
+ * previewDeptCleanup 으로 먼저 확인하신 뒤 실행해 주세요.
+ */
+function cleanupDepts() {
+  var sh = sheet(SHEET_LINKS);
+  var rows = readSheet(sh, LINK_COLS);
+
+  // 아래에서 위로 지워야 행 번호가 밀리지 않습니다.
+  var removed = 0;
+  for (var i = rows.length - 1; i >= 0; i--) {
+    if (RETIRED_DEPTS.indexOf(String(rows[i].dept).trim()) >= 0) {
+      sh.deleteRow(i + 2);          // 1행은 머리글
+      removed++;
+    }
+  }
+
+  // config 의 부서 목록을 새 목록으로 맞춥니다.
+  setConfigValue('depts', DEPTS.join(', '));
+
+  var text = '업무 ' + removed + '건을 지우고, 부서 목록을 ' + DEPTS.length + '개로 맞췄습니다.\n' +
+             DEPTS.join(', ');
+  say('정리 완료', text);
+  return text;
+}
+
+function cleanupDeptsFromMenu() {
+  var ui = uiOrNull();
+  if (!ui) return cleanupDepts();
+
+  var res = ui.alert('부서 정리',
+    previewDeptCleanup() + '\n\n정말 지울까요? (되돌리려면 파일 > 버전 기록)',
+    ui.ButtonSet.YES_NO);
+  if (res !== ui.Button.YES) return;
+  ui.alert('정리 완료', cleanupDepts(), ui.ButtonSet.OK);
+}
+
+/** config 시트의 값 한 칸을 고칩니다. 없으면 새로 넣습니다. */
+function setConfigValue(key, value) {
+  var sh = sheet(SHEET_CONFIG);
+  var rows = sh.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === key) {
+      sh.getRange(i + 1, 2).setValue(value);
+      return;
+    }
+  }
+  sh.appendRow([key, value]);
 }
 
 /** 새 기능으로 늘어난 열(track/target/email)을 기존 시트에 덧붙입니다. */
