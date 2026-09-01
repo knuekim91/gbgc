@@ -65,7 +65,7 @@
     <h2>로그인</h2>
     <p class="muted small">선생님 성함을 아이디로 사용합니다. 초기 비밀번호는 <code>2026</code> 입니다.</p>
     <label>이름
-      <input name="name" required autocomplete="username" placeholder="예) 김나은">
+      <input name="name" required autocomplete="username" placeholder="예) 김재홍" maxlength="10" autofocus>
     </label>
     <label>비밀번호
       <input name="password" type="password" required autocomplete="current-password" value="">
@@ -74,8 +74,8 @@
     <menu>
       <button type="button" id="forgotBtn" class="linklike">비밀번호를 잊으셨나요?</button>
       <span class="grow"></span>
-      <button value="cancel" class="btn btn-ghost" type="submit" formnovalidate>취소</button>
-      <button value="ok" class="btn btn-primary">로그인</button>
+      <button type="button" class="btn btn-ghost" data-close="dlgLogin">취소</button>
+      <button value="ok" class="btn btn-primary" type="submit">로그인</button>
     </menu>
   </form>
 </dialog>
@@ -181,8 +181,8 @@
 
     <p class="err" data-err hidden></p>
     <menu>
-      <button value="cancel" class="btn btn-ghost" type="submit" formnovalidate>취소</button>
-      <button value="ok" class="btn btn-primary">저장</button>
+      <button type="button" class="btn btn-ghost" data-close="dlgLink">취소</button>
+      <button value="ok" class="btn btn-primary" type="submit">저장</button>
     </menu>
   </form>
 </dialog>

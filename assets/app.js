@@ -400,6 +400,7 @@
         lock.hidden = false;
         lock.textContent = '링크를 보려면 로그인이 필요합니다.';
         if (!$('#dlgLogin').open) $('#dlgLogin').showModal();
+      focusLogin();
         return;
       }
       applyHash();
@@ -449,6 +450,7 @@
       pendingAdd = { url: p.get('url') || '', title: p.get('title') || '' };
       toast('로그인하면 등록창이 열립니다');
       if (!$('#dlgLogin').open) $('#dlgLogin').showModal();
+      focusLogin();
       return;
     }
     openAddWith({ url: p.get('url') || '', title: p.get('title') || '' });
@@ -571,11 +573,11 @@
 
   // 로그인 / 계정
   $('#authBtn').addEventListener('click', function () {
-    if (state.me) { openAccount(); } else { showErr($('#loginForm'), ''); $('#dlgLogin').showModal(); }
+    if (state.me) { openAccount(); }
+    else { showErr($('#loginForm'), ''); $('#dlgLogin').showModal(); focusLogin(); }
   });
 
   $('#loginForm').addEventListener('submit', function (e) {
-    if (e.submitter && e.submitter.value === 'cancel') return;
     e.preventDefault();
     var f = e.target;
     showErr(f, '');
@@ -722,7 +724,6 @@
   }
 
   $('#linkForm').addEventListener('submit', function (e) {
-    if (e.submitter && e.submitter.value === 'cancel') return;
     e.preventDefault();
     var f = e.target;
     showErr(f, '');
@@ -740,6 +741,24 @@
       toast(f.id.value ? '수정했습니다' : '업무를 추가했습니다');
       loadProgress();
     }).catch(function (err) { showErr(f, err.message); });
+  });
+
+  /** 로그인 창을 열면 아직 안 채운 칸에 커서를 둡니다. */
+  function focusLogin() {
+    var f = $('#loginForm');
+    setTimeout(function () {
+      (f.name.value.trim() ? f.password : f.name).focus();
+    }, 50);
+  }
+
+  /**
+   * 이름을 다 치면 비밀번호 칸으로 옮겨 갑니다.
+   * 이 학교 교직원 68명이 모두 세 글자라 세 글자에서 넘깁니다.
+   * 네 글자 이름이면 이름 칸을 다시 눌러 이어 치시면 됩니다.
+   */
+  $('#loginForm').name.addEventListener('input', function (e) {
+    var f = $('#loginForm');
+    if (e.target.value.trim().length === 3 && !f.password.value) f.password.focus();
   });
 
   /* 비밀번호 재설정 — 등록된 이메일로 코드를 받아 새로 정합니다. */
