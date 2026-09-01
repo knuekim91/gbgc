@@ -19,9 +19,15 @@ var DEFAULT_PASSWORD = '2026';
 var TOKEN_HOURS = 12;
 var HASH_ROUNDS = 600;
 
+// 첨부파일은 내 드라이브 / gbgc / <부서> 아래에 쌓입니다.
+// 파일이 Apps Script 를 거쳐 가므로 크기를 키우면 업로드가 눈에 띄게 느려집니다.
+// 큰 파일은 드라이브에 직접 올리고 '링크 주소' 칸을 쓰시는 편이 낫습니다.
+var DRIVE_FOLDER = 'gbgc';
+var MAX_FILE_MB = 5;
+
 // track / target / email 은 뒤에 덧붙였습니다. 기존 시트를 쓰던 중이라면
 // 메뉴 [경북여상 허브 > 시트 열 최신화] 를 한 번 실행해 주세요.
-var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc'];
+var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc','fileId','fileName','fileUrl'];
 var USER_COLS = ['name','dept','role','salt','hash','mustChange','updatedAt','email','lastLogin'];
 var TEACHER_COLS = ['name','dept','title','group'];
 
@@ -57,6 +63,7 @@ function handle(req) {
       case 'saveMyDepts':    return json(actSaveMyDepts(req));
       case 'requestReset':   return json(actRequestReset(req));
       case 'confirmReset':   return json(actConfirmReset(req));
+      case 'uploadFile':     return json(actUploadFile(req));
       case 'saveLink':       return json(actSaveLink(req));
       case 'deleteLink':     return json(actDeleteLink(req));
       case 'reorder':        return json(actReorder(req));
@@ -320,6 +327,56 @@ function maskEmail(email) {
   return email.slice(0, 2) + '***' + email.slice(at);
 }
 
+/**
+ * 첨부파일을 내 드라이브 / gbgc / <부서> 에 저장합니다.
+ *
+ * 파일은 이 스크립트 주인 계정 소유가 되고, 그 계정의 드라이브 용량을 씁니다.
+ * 선생님들이 열 수 있어야 하므로 '링크가 있는 모든 사용자 · 뷰어' 로 공유합니다.
+ * 따라서 개인정보가 담긴 파일은 올리지 않는 편이 좋습니다.
+ */
+function actUploadFile(req) {
+  var me = requireUser(req);
+  assertHasEmail(me);
+
+  var dept = String(req.dept || '').trim();
+  assertCanEdit(me, dept);
+
+  var name = String(req.name || '첨부파일').trim();
+  var mime = String(req.mimeType || '').trim() || 'application/octet-stream';
+  var b64  = String(req.data || '');
+  if (!b64) throw new Error('파일 내용을 읽지 못했습니다.');
+
+  var bytes = Utilities.base64Decode(b64);
+  var mb = bytes.length / 1048576;
+  if (mb > MAX_FILE_MB) {
+    throw new Error('첨부파일은 ' + MAX_FILE_MB + 'MB 이하만 올릴 수 있습니다. (지금 ' + mb.toFixed(1) + 'MB)\n' +
+                    '큰 파일은 구글 드라이브에 올리고 [링크 주소] 칸에 주소를 넣어 주세요.');
+  }
+
+  var folder = deptFolder(dept);
+  var file = folder.createFile(Utilities.newBlob(bytes, mime, name));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return { ok: true, file: { id: file.getId(), name: file.getName(), url: file.getUrl() } };
+}
+
+function deptFolder(dept) {
+  var root = childFolder(DriveApp.getRootFolder(), DRIVE_FOLDER);
+  return dept ? childFolder(root, dept) : root;
+}
+
+/** 이름이 같은 폴더가 있으면 쓰고, 없으면 만듭니다. */
+function childFolder(parent, name) {
+  var found = parent.getFoldersByName(name);
+  return found.hasNext() ? found.next() : parent.createFolder(name);
+}
+
+/** 첨부파일을 휴지통으로 보냅니다. 실패해도 업무 삭제는 계속 진행합니다. */
+function trashFile(fileId) {
+  if (!fileId) return;
+  try { DriveApp.getFileById(fileId).setTrashed(true); } catch (err) { /* 이미 없는 파일 */ }
+}
+
 function actSaveLink(req) {
   var me = requireUser(req);
   var link = req.link || {};
@@ -354,7 +411,10 @@ function actSaveLink(req) {
     updatedAt: now(),
     track: link.track ? 'Y' : '',
     target: Number(link.target) || '',
-    desc: String(link.desc || '').trim()
+    desc: String(link.desc || '').trim(),
+    fileId: String(link.fileId || '').trim(),
+    fileName: String(link.fileName || '').trim(),
+    fileUrl: String(link.fileUrl || '').trim()
   };
 
   if (id) {
@@ -363,6 +423,9 @@ function actSaveLink(req) {
     if (found < 0) throw new Error('수정할 링크를 찾을 수 없습니다.');
     assertCanEdit(me, rows[found].dept);
     record.sort = Number(rows[found].sort) || record.sort;
+    // 첨부파일을 바꾸거나 뗐다면 예전 파일은 휴지통으로 보냅니다.
+    var oldFile = String(rows[found].fileId || '').trim();
+    if (oldFile && oldFile !== record.fileId) trashFile(oldFile);
     writeRow(sh, found + 2, LINK_COLS, record);
   } else {
     sh.appendRow(LINK_COLS.map(function (c) { return record[c]; }));
@@ -380,6 +443,7 @@ function actDeleteLink(req) {
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].id === id) {
       assertCanEdit(me, rows[i].dept);
+      trashFile(String(rows[i].fileId || '').trim());
       sh.deleteRow(i + 2);
       return { ok: true, links: readLinks() };
     }

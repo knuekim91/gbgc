@@ -491,6 +491,37 @@ input:focus, select:focus, textarea:focus {
 .kv dt { color: var(--ink-3); font-size: 12.5px; }
 .kv dd { margin: 0; }
 
+/* 첨부파일 */
+.attach {
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 13px; background: var(--panel-2);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.attach .hint { margin: 0; }
+.filepick {
+  font-size: 12.5px; width: 100%;
+  border: 1px dashed var(--line); border-radius: 8px;
+  padding: 9px; background: var(--panel); cursor: pointer;
+}
+.filepick::file-selector-button {
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  border: 0; border-radius: 6px; padding: 5px 11px; margin-right: 9px;
+  background: var(--accent); color: var(--accent-ink);
+}
+.attached {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px;
+}
+.attached .clip { flex-shrink: 0; }
+.attached a { color: var(--accent); overflow-wrap: anywhere; }
+.busy { color: var(--accent); font-weight: 500; }
+.tag.has-file {
+  background: color-mix(in srgb, #2e9e6b 15%, transparent); color: #1a7a4f;
+}
+:root[data-theme="dark"] .tag.has-file,
+:root:not([data-theme="light"]) .tag.has-file { color: #5fd39a; }
+
 /* 링크 폼 — 수합 현황 */
 .track-box {
   border: 1px solid var(--line); border-radius: 10px;

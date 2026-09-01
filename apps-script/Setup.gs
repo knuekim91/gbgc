@@ -280,7 +280,7 @@ function installHub() {
       counter[s[0]] = (counter[s[0]] || 0) + 10;
       return [
         newId(), s[0], s[1], s[2], detectType(s[2]),
-        s[4] || '', s[3] || '', counter[s[0]], 'Y', '(초기이전)', now(), '', '', ''
+        s[4] || '', s[3] || '', counter[s[0]], 'Y', '(초기이전)', now(), '', '', '', '', '', ''
       ];
     });
     links.getRange(2, 1, rows.length, LINK_COLS.length).setValues(rows);

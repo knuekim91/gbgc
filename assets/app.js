@@ -163,7 +163,8 @@
       if (state.filter !== 'all' && state.filter !== 'fav' &&
           state.filter !== 'due' && state.filter !== 'mine' && l.dept !== state.filter) return false;
       if (q) {
-        var hay = (l.title + ' ' + l.dept + ' ' + (l.note || '') + ' ' + (l.desc || '')).toLowerCase();
+        var hay = (l.title + ' ' + l.dept + ' ' + (l.note || '') + ' ' +
+                   (l.desc || '') + ' ' + (l.fileName || '')).toLowerCase();
         return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
       }
       return true;
@@ -289,6 +290,7 @@
               progressTag(l) +
               (l.note ? '<span class="tag">' + esc(l.note) + '</span>' : '') +
               (l.desc ? '<span class="tag has-desc">알릴 내용</span>' : '') +
+              (l.fileUrl ? '<span class="tag has-file">📎 첨부</span>' : '') +
             '</span>' +
           '</span>' +
           '<span class="caret" aria-hidden="true">▾</span>' +
@@ -312,6 +314,11 @@
           '<dt>링크</dt><dd>' +
             (l.url
               ? '<a class="panel-link" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.url) + '</a>'
+              : '') +
+          '</dd>' +
+          '<dt>첨부파일</dt><dd>' +
+            (l.fileUrl
+              ? '<a class="panel-link" href="' + esc(l.fileUrl) + '" target="_blank" rel="noopener noreferrer">📎 ' + esc(l.fileName || '첨부파일') + '</a>'
               : '') +
           '</dd>' +
           '<dt>알릴 내용</dt><dd class="desc">' + esc(l.desc || '') + '</dd>' +
@@ -605,12 +612,14 @@
       f.deadline.value = link.deadline || '';
       f.note.value = link.note || '';
       f.desc.value = link.desc || '';
+      showAttach(link.fileId ? { id: link.fileId, name: link.fileName, url: link.fileUrl } : null);
       f.track.checked = String(link.track).toUpperCase() === 'Y';
       f.target.value = link.target || '';
       hintFor(link.url);
     } else {
       $('#linkFormTitle').textContent = '업무 추가';
       f.id.value = '';
+      showAttach(null);
       if (dept && allowed.indexOf(dept) >= 0) f.dept.value = dept;
     }
     syncTrackBox();
@@ -618,6 +627,66 @@
     if (!$('#dlgLink').open) $('#dlgLink').showModal();
     setTimeout(function () { (link ? f.title : f.url).focus(); }, 40);
   }
+
+  /* ── 첨부파일 ───────────────────────── */
+
+  var MAX_FILE_MB = 5;
+
+  function showAttach(file) {
+    var f = $('#linkForm');
+    f.fileId.value = file ? file.id : '';
+    f.fileName.value = file ? file.name : '';
+    f.fileUrl.value = file ? file.url : '';
+
+    $('#attachDone').hidden = !file;
+    $('#attachEmpty').hidden = !!file;
+    if (file) {
+      $('#attachLink').textContent = file.name;
+      $('#attachLink').href = file.url;
+    }
+    $('#attachInput').value = '';
+  }
+
+  $('#attachRemove').addEventListener('click', function () { showAttach(null); });
+
+  $('#attachInput').addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    var f = $('#linkForm');
+    if (file.size > MAX_FILE_MB * 1048576) {
+      showErr(f, '첨부파일은 ' + MAX_FILE_MB + 'MB 이하만 올릴 수 있습니다. (지금 ' +
+                 (file.size / 1048576).toFixed(1) + 'MB)\n' +
+                 '큰 파일은 구글 드라이브에 올리고 [링크 주소] 칸에 주소를 넣어 주세요.');
+      $('#attachInput').value = '';
+      return;
+    }
+    showErr(f, '');
+    $('#attachBusy').hidden = false;
+
+    var reader = new FileReader();
+    reader.onload = function () {
+      // data:...;base64,XXXX 에서 뒤쪽만 보냅니다.
+      var data = String(reader.result).split(',')[1] || '';
+      api('uploadFile', {
+        dept: f.dept.value, name: file.name,
+        mimeType: file.type || 'application/octet-stream', data: data
+      }).then(function (d) {
+        showAttach(d.file);
+        toast('첨부했습니다');
+      }).catch(function (err) {
+        showErr(f, err.message);
+        $('#attachInput').value = '';
+      }).then(function () {
+        $('#attachBusy').hidden = true;
+      });
+    };
+    reader.onerror = function () {
+      $('#attachBusy').hidden = true;
+      showErr(f, '파일을 읽지 못했습니다.');
+    };
+    reader.readAsDataURL(file);
+  });
 
   function syncTrackBox() {
     $('.track-target').hidden = !$('#linkForm').track.checked;
@@ -645,7 +714,8 @@
       link: {
         id: f.id.value, dept: f.dept.value, title: f.title.value.trim(),
         url: f.url.value.trim(), deadline: f.deadline.value, note: f.note.value.trim(),
-        desc: f.desc.value.trim(), track: f.track.checked, target: f.target.value
+        desc: f.desc.value.trim(), track: f.track.checked, target: f.target.value,
+        fileId: f.fileId.value, fileName: f.fileName.value, fileUrl: f.fileUrl.value
       }
     }).then(function (d) {
       state.links = d.links;
