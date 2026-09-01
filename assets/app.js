@@ -415,7 +415,7 @@
               deadlineTag(l.deadline) +
               progressTag(l) +
               (l.note ? '<span class="tag">' + esc(l.note) + '</span>' : '') +
-              (l.desc ? '<span class="tag has-desc">알릴 내용</span>' : '') +
+              (l.desc ? '<span class="tag has-desc">내용있음</span>' : '') +
               (fileCount(l) ? '<span class="tag has-file">📎 첨부' +
                  (fileCount(l) > 1 ? ' ' + fileCount(l) : '') + '</span>' : '') +
             '</span>' +
@@ -464,7 +464,7 @@
   function renderAuth() {
     var btn = $('#authBtn');
     if (state.me) {
-      btn.textContent = state.me.name + ' 님';
+      btn.textContent = state.me.name + ' 선생님';
       btn.classList.remove('btn-ghost');
     } else {
       btn.textContent = '로그인';
@@ -721,7 +721,7 @@
       }
       f.reset();
       $('#dlgLogin').close();
-      toast(state.me.name + ' 님, 반갑습니다');
+      toast(state.me.name + ' 선생님, 반갑습니다');
       if (pendingAdd) { var seed = pendingAdd; pendingAdd = null; openAddWith(seed); }
     }).catch(function (err) {
       store(LS.token, null);
@@ -1249,13 +1249,13 @@
   $('#userList').addEventListener('click', function (e) {
     var el;
     if ((el = e.target.closest('[data-reset]'))) {
-      if (!confirm(el.dataset.reset + ' 님의 비밀번호를 2026 으로 초기화할까요?')) return;
+      if (!confirm(el.dataset.reset + ' 선생님의 비밀번호를 2026 으로 초기화할까요?')) return;
       api('resetPassword', { name: el.dataset.reset })
         .then(function () { loadUsers(); toast('초기화했습니다 (비밀번호 2026)'); })
         .catch(function (err) { toast(err.message, true); });
     }
     if ((el = e.target.closest('[data-udel]'))) {
-      if (!confirm(el.dataset.udel + ' 님 계정을 삭제할까요?')) return;
+      if (!confirm(el.dataset.udel + ' 선생님 계정을 삭제할까요?')) return;
       api('deleteUser', { name: el.dataset.udel })
         .then(function (d) { state.users = d.users; renderUsers(); toast('삭제했습니다'); })
         .catch(function (err) { toast(err.message, true); });
