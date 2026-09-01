@@ -53,7 +53,15 @@
         var data;
         try { data = JSON.parse(t); }
         catch (e) { throw new Error('서버 응답을 읽지 못했습니다. 웹앱 배포 설정을 확인해 주세요.'); }
-        if (!data.ok) throw new Error(data.error || '알 수 없는 오류');
+        if (!data.ok) {
+          // 화면(GitHub Pages)은 바로 바뀌지만 서버(Apps Script)는 재배포해야
+          // 새 기능을 압니다. 그 사이에 나오는 오류를 알아볼 수 있게 바꿉니다.
+          if (String(data.error || '').indexOf('알 수 없는 요청') === 0) {
+            throw new Error('이 기능은 서버에 아직 반영되지 않았습니다.' + NL +
+              '관리자 선생님께 Apps Script 재배포를 부탁해 주세요.');
+          }
+          throw new Error(data.error || '알 수 없는 오류');
+        }
         return data;
       });
   }

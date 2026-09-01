@@ -502,10 +502,14 @@ function actArchiveLink(req) {
     // 이미 [부서명] 이 붙어 있으면 또 붙이지 않습니다.
     if (title.indexOf('[' + from + ']') !== 0) title = '[' + from + '] ' + title;
 
+    // 자리를 먼저 구합니다. rows[i] 를 고친 뒤에 구하면 자기 자신까지
+    // 세어 버려, 옮겨 갈 곳의 맨 위가 아닌 엉뚱한 자리가 나올 수 있습니다.
+    var seat = nextSort(rows, box);         // 창고 안에서 가장 최근 자리
+
     var record = rows[i];
     record.dept = box;
     record.title = title;
-    record.sort = nextSort(rows, box);      // 창고 안에서 가장 최근 자리에
+    record.sort = seat;
     record.updatedBy = me.name;
     record.updatedAt = now();
 
@@ -547,10 +551,12 @@ function actRestoreLink(req) {
     }
     assertCanEdit(me, back);      // 그 부서를 맡은 사람만
 
+    var seat = nextSort(rows, back);        // 돌아갈 부서의 맨 위 자리
+
     var record = rows[i];
     record.dept = back;
     record.title = m[2].trim() || title;
-    record.sort = nextSort(rows, back);
+    record.sort = seat;
     record.updatedBy = me.name;
     record.updatedAt = now();
 
