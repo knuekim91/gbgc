@@ -1211,9 +1211,20 @@
     }
   });
 
-  // 대화상자 바깥 클릭으로 닫기
+  /*
+   * 대화상자 바깥을 눌러 닫기.
+   *
+   * click 만 보면 안 됩니다. 입력칸 안에서 글자를 끌어 선택하다가 손을 바깥에서
+   * 떼거나, 스크롤 막대를 잡아 끌 때도 click 의 target 이 대화상자가 되어
+   * 창이 닫혀 버립니다. 그래서 "누르기 시작한 곳"까지 함께 봅니다.
+   */
   $$('.dlg').forEach(function (d) {
-    d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
+    var startedOutside = false;
+    d.addEventListener('pointerdown', function (e) { startedOutside = (e.target === d); });
+    d.addEventListener('click', function (e) {
+      if (startedOutside && e.target === d) d.close();
+      startedOutside = false;
+    });
   });
 
   // 테마
