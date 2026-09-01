@@ -241,6 +241,12 @@
       <form id="ddayForm" class="ddayadd">
         <input name="label" placeholder="예) 1차 입학설명회" required maxlength="20">
         <input name="date" type="date" required>
+        <select name="fx" aria-label="효과">
+          <option value="">효과 없음</option>
+          <option value="pulse">두근두근</option>
+          <option value="shake">흔들림</option>
+          <option value="glow">반짝임</option>
+        </select>
         <button class="btn btn-primary" type="submit">추가</button>
       </form>
       <p class="err" data-err hidden></p>

@@ -193,6 +193,8 @@
    * 날짜는 2026-09-11 도 9.11 도 됩니다. 연도를 빼면 올해로 봅니다.
    * 이미 지난 일정은 저절로 사라지므로 해마다 날짜만 고치시면 됩니다.
    */
+  var FX_LABEL = { '': '효과 없음', pulse: '두근두근', shake: '흔들림', glow: '반짝임' };
+
   function parseDdays(raw) {
     var year = new Date().getFullYear();
     // 줄바꿈으로도, 쉼표로도 나눌 수 있게 합니다.
@@ -208,6 +210,15 @@
 
       var label = part.slice(0, at).trim();
       var text = part.slice(at + 1).trim();
+
+      // 날짜 뒤에 @효과 가 붙을 수 있습니다. 없으면 효과 없음입니다.
+      var fx = '';
+      var atFx = text.indexOf('@');
+      if (atFx >= 0) {
+        fx = text.slice(atFx + 1).trim();
+        text = text.slice(0, atFx).trim();
+        if (!FX_LABEL.hasOwnProperty(fx)) fx = '';
+      }
       var full = /^(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})$/.exec(text);
       var short = /^(\d{1,2})[-.\/](\d{1,2})$/.exec(text);
 
@@ -217,7 +228,7 @@
       else return null;
 
       if (!label || isNaN(date)) return null;
-      return { label: label, date: date };
+      return { label: label, date: date, fx: fx };
     }).filter(Boolean).sort(function (a, b) { return a.date - b.date; });
   }
 
@@ -232,7 +243,7 @@
     $('#ddays').innerHTML = items.map(function (d) {
       var left = Math.round((d.date - today) / 86400000);
       var md = (d.date.getMonth() + 1) + '.' + d.date.getDate();
-      return '<span class="dday">' +
+      return '<span class="dday' + (d.fx ? ' fx-' + d.fx : '') + '">' +
         '<b>' + esc(d.label) + '</b>' +
         '<span class="dday-date">' + md + '</span>' +
         '<span class="dday-left">' + (left === 0 ? 'D-DAY' : 'D-' + left) + '</span>' +
@@ -1099,6 +1110,7 @@
       return '<div class="attached">' +
         '<b class="grow">' + esc(d.label) + '</b>' +
         '<span class="dday-date">' + ymd(d.date) + '</span>' +
+        '<span class="dday-fx">' + esc(FX_LABEL[d.fx] || '효과 없음') + '</span>' +
         '<button type="button" class="tool" data-ddel="' + i + '" title="빼기" aria-label="' +
           esc(d.label) + ' 빼기">✕</button>' +
       '</div>';
@@ -1107,7 +1119,9 @@
 
   /** 목록을 한 줄짜리 설정값으로 담아 저장합니다. */
   function saveDdays(items) {
-    var one = items.map(function (d) { return d.label + '=' + ymd(d.date); }).join(', ');
+    var one = items.map(function (d) {
+      return d.label + '=' + ymd(d.date) + (d.fx ? '@' + d.fx : '');
+    }).join(', ');
     return api('saveConfig', { config: { dday: one } }).then(function (r) {
       state.config = r.config;
       renderDdayList();
@@ -1125,7 +1139,10 @@
     if (!label || !date) return showErr($('#ddaySection'), '이름과 날짜를 모두 넣어 주세요.');
 
     var items = parseDdays(state.config.dday);
-    items.push({ label: label, date: new Date(date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10)) });
+    items.push({
+      label: label, fx: f.fx.value,
+      date: new Date(date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10))
+    });
     items.sort(function (a, b) { return a.date - b.date; });
 
     saveDdays(items).then(function () {

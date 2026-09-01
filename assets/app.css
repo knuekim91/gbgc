@@ -482,16 +482,59 @@ input:focus, select:focus, textarea:focus {
 
 /* 이메일 입력 + 저장 버튼 한 줄 */
 .inline { display: flex; gap: 7px; align-items: center; }
-/* 일정 추가 줄 — 이름 / 날짜 / 추가 */
+/*
+ * D-day 효과 세 가지.
+ * 늘 화면에 떠 있는 자리라 과하지 않게, 잠깐씩만 움직이도록 했습니다.
+ */
+.dday.fx-pulse { animation: ddayPulse 1.8s ease-in-out infinite; }
+@keyframes ddayPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.07); }
+}
+
+/* 3초에 한 번만 짧게 흔듭니다. 계속 흔들리면 눈이 피로합니다. */
+.dday.fx-shake { animation: ddayShake 3s ease-in-out infinite; }
+@keyframes ddayShake {
+  0%, 86%, 100% { transform: translateX(0); }
+  89% { transform: translateX(-2.5px); }
+  92% { transform: translateX(2.5px); }
+  95% { transform: translateX(-2px); }
+  98% { transform: translateX(1.5px); }
+}
+
+.dday.fx-glow {
+  animation: ddayGlowBox 2.2s ease-in-out infinite;
+}
+.dday.fx-glow .dday-left { animation: ddayGlow 2.2s ease-in-out infinite; }
+@keyframes ddayGlow {
+  0%, 100% { text-shadow: none; }
+  50%      { text-shadow: 0 0 11px currentColor; }
+}
+@keyframes ddayGlowBox {
+  0%, 100% { border-color: var(--line); }
+  50%      { border-color: var(--due-ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dday.fx-pulse, .dday.fx-shake, .dday.fx-glow,
+  .dday.fx-glow .dday-left { animation: none; }
+}
+
+/* 일정 추가 줄 — 이름 / 날짜 / 효과 / 추가 */
 .ddayadd { display: flex; gap: 7px; align-items: center; }
 .ddayadd input[name="label"] { flex: 1; min-width: 0; }
-.ddayadd input[name="date"] { width: 160px; flex-shrink: 0; }
+.ddayadd input[name="date"] { width: 150px; flex-shrink: 0; }
+.ddayadd select[name="fx"] { width: 108px; flex-shrink: 0; }
 .ddayadd button { flex-shrink: 0; }
 #ddayList .dday-date { font-size: 12px; }
+#ddayList .dday-fx {
+  font-size: 11px; color: var(--ink-3);
+  background: var(--line-2); border-radius: 5px; padding: 1px 7px;
+}
 
 @media (max-width: 560px) {
   .ddayadd { flex-wrap: wrap; }
-  .ddayadd input[name="date"] { width: auto; flex: 1; }
+  .ddayadd input[name="date"], .ddayadd select[name="fx"] { width: auto; flex: 1; }
 }
 .inline input { flex: 1; min-width: 0; }
 .inline button { flex-shrink: 0; }
