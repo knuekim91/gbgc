@@ -518,6 +518,7 @@ function actSaveUser(req) {
   var dept = String(u.dept || '').trim();
   var role = u.role === 'admin' ? 'admin' : 'teacher';
   if (!name) throw new Error('이름을 입력해 주세요.');
+  if (isSuperAdmin(name)) role = 'admin';    // 최고관리자는 늘 관리자입니다
   if (role !== 'admin' && !dept) throw new Error('부서를 선택해 주세요.');
 
   var email = String(u.email || '').trim();
@@ -536,6 +537,7 @@ function actDeleteUser(req) {
   var me = requireAdmin(req);
   var name = String(req.name || '');
   if (name === me.name) throw new Error('본인 계정은 삭제할 수 없습니다.');
+  if (isSuperAdmin(name)) throw new Error('최고관리자 계정은 삭제할 수 없습니다.');
   var sh = sheet(SHEET_USERS);
   var rows = readSheet(sh, USER_COLS);
   for (var i = 0; i < rows.length; i++) {
@@ -820,6 +822,24 @@ function deptList() {
     .split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 }
 
+/**
+ * 최고관리자.
+ *
+ * 이름은 config 시트의 superAdmin 칸에서 읽습니다.
+ * 저장소가 공개라 코드에 실명을 넣지 않으려는 것입니다.
+ *
+ * 이 사람은 users 시트에 무엇이 적혀 있든 늘 관리자이고,
+ * 다른 관리자가 지우거나 권한을 낮출 수 없습니다.
+ */
+function superAdminName() {
+  return String(readConfig().superAdmin || '').trim();
+}
+
+function isSuperAdmin(name) {
+  var top = superAdminName();
+  return !!top && String(name || '').trim() === top;
+}
+
 function findUser(name) {
   var rows = readSheet(sheet(SHEET_USERS), USER_COLS);
   var key = String(name || '').trim();
@@ -862,7 +882,8 @@ function publicUser(u) {
   return {
     name: String(u.name).trim(),
     dept: String(u.dept || ''),
-    role: u.role === 'admin' ? 'admin' : 'teacher',
+    role: (isSuperAdmin(u.name) || u.role === 'admin') ? 'admin' : 'teacher',
+    top: isSuperAdmin(u.name),
     email: String(u.email || '').trim(),
     lastLogin: asDateTimeText(u.lastLogin),
     mustChange: String(u.mustChange || '').toUpperCase() === 'Y'

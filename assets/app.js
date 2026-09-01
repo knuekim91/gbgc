@@ -939,7 +939,8 @@
     $('#emailForm').email.value = me.email || '';
     showErr($('#emailForm'), '');
     $('#acctName').textContent = me.name;
-    $('#acctRole').textContent = me.role === 'admin' ? '관리자 (전체 부서)' : '부서 담당';
+    $('#acctRole').textContent = me.top ? '최고관리자 (전체 부서)'
+      : me.role === 'admin' ? '관리자 (전체 부서)' : '부서 담당';
     showErr($('#pwForm'), '');
     $('#pwForm').reset();
     $('#firstLogin').hidden = !me.mustChange;
@@ -1058,18 +1059,22 @@
       return;
     }
     $('#userList').innerHTML =
-      '<div class="uhead"><span>이름</span><span>부서</span><span>최근 로그인</span><span></span><span></span></div>' +
+      '<div class="uhead"><span>아이디</span><span>접속시간</span>' +
+        '<span title="비밀번호 초기화">초기화</span><span title="계정 삭제">삭제</span></div>' +
       state.users.map(function (u) {
         return '<div class="urow">' +
           '<span class="uname">' + esc(u.name) +
-            (u.role === 'admin' ? '<span class="badge">관리자</span>' : '') +
+            (u.top ? '<span class="badge top">최고관리자</span>'
+                   : u.role === 'admin' ? '<span class="badge">관리자</span>' : '') +
             (u.mustChange ? '<span class="badge warn">초기 비번</span>' : '') +
             (u.email ? '' : '<span class="badge warn">메일 없음</span>') +
+            '<span class="udept">' + esc(u.dept || '부서 없음') + '</span>' +
           '</span>' +
-          '<span class="udept">' + esc(u.dept || '—') + '</span>' +
           '<span class="ulast">' + loginAgo(u.lastLogin) + '</span>' +
           '<button class="tool" type="button" data-reset="' + esc(u.name) + '" title="비밀번호 초기화">↺</button>' +
-          '<button class="tool" type="button" data-udel="' + esc(u.name) + '" title="계정 삭제">🗑</button>' +
+          // 최고관리자는 지울 수 없습니다. 서버도 막지만 버튼부터 감춥니다.
+          (u.top ? '<span class="tool" aria-hidden="true"></span>'
+                 : '<button class="tool" type="button" data-udel="' + esc(u.name) + '" title="계정 삭제">🗑</button>') +
         '</div>';
       }).join('');
   }

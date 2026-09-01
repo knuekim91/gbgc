@@ -479,9 +479,10 @@ input:focus, select:focus, textarea:focus {
 /* 가입한 선생님 표 */
 .utable { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; }
 .uhead, .urow {
-  display: grid; grid-template-columns: 1fr 1fr 1.2fr auto auto;
+  display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) 34px 34px;
   gap: 8px; align-items: center; padding: 6px 9px; border-radius: 7px;
 }
+.uhead span:nth-child(n+3) { text-align: center; }
 .uhead {
   font-size: 11px; font-weight: 600; color: var(--ink-3);
   position: sticky; top: 0; background: var(--panel-2); z-index: 1;
@@ -489,7 +490,8 @@ input:focus, select:focus, textarea:focus {
 .urow { background: var(--panel); font-size: 13px; }
 .urow:hover { background: var(--line-2); }
 .uname { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
-.udept, .ulast { color: var(--ink-2); font-size: 12.5px; overflow-wrap: anywhere; }
+.ulast { color: var(--ink-2); font-size: 12.5px; overflow-wrap: anywhere; }
+.udept { color: var(--ink-3); font-size: 11.5px; }
 .ulast { font-variant-numeric: tabular-nums; }
 .ulast .ago { color: var(--ink-3); font-size: 11.5px; }
 .ulast .never { color: var(--ink-3); }
@@ -498,11 +500,12 @@ input:focus, select:focus, textarea:focus {
   background: var(--line-2); color: var(--ink-2);
 }
 .badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.badge.top { background: var(--accent); color: var(--accent-ink); }
 
 @media (max-width: 560px) {
   .uhead { display: none; }
   .urow { grid-template-columns: 1fr auto auto; row-gap: 2px; }
-  .urow .udept, .urow .ulast { grid-column: 1 / -1; }
+  .urow .ulast { grid-column: 1 / -1; }
 }
 
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; margin: 0; font-size: 13.5px; }
