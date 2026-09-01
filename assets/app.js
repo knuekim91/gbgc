@@ -195,8 +195,12 @@
     if (state.me) items.push({ id: 'mine', label: '내 부서', n: null });
     items.push({ id: 'fav', label: '⭐ 즐겨찾기', n: null });
     items.push({ id: 'due', label: '⏰ 마감 임박', n: null });
+    // 업무가 있는 부서는 누구에게나, 아직 비어 있는 부서는 그곳을 맡은
+    // 선생님에게만 보여 줍니다. 그래야 첫 업무를 올릴 길이 생깁니다.
+    var editable = hasEmail() ? myDepts() : [];
     state.depts.forEach(function (d) {
       if (counts[d]) items.push({ id: d, label: d, n: counts[d] });
+      else if (editable.indexOf(d) >= 0) items.push({ id: d, label: d, n: null });
     });
     // config 목록에 없는 부서가 데이터에 있으면 뒤에 붙입니다.
     Object.keys(counts).forEach(function (d) {
@@ -223,8 +227,11 @@
     });
 
     // 편집 권한이 있는데 아직 링크가 없는 부서도 카드로 보여 줍니다.
-    if (state.me && hasEmail() && !state.q && (state.filter === 'all' || state.filter === 'mine')) {
-      myDepts().forEach(function (d) {
+    if (state.me && hasEmail() && !state.q) {
+      var show = (state.filter === 'all' || state.filter === 'mine')
+        ? myDepts()
+        : (myDepts().indexOf(state.filter) >= 0 ? [state.filter] : []);
+      show.forEach(function (d) {
         if (!index[d]) { index[d] = { dept: d, items: [] }; groups.push(index[d]); }
       });
     }
