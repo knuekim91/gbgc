@@ -142,6 +142,12 @@
     return state.me.dept.split(',').map(function (s) { return s.trim(); }).indexOf(dept) >= 0;
   }
 
+  /** 창고 부서 이름 — 서버가 부서 목록 맨 뒤에 넣어 보냅니다. */
+  function archiveDept() {
+    return state.config.archiveDept ||
+      (state.depts.length ? state.depts[state.depts.length - 1] : '');
+  }
+
   function myDepts() {
     if (!state.me) return [];
     if (state.me.role === 'admin') return state.depts.slice();
@@ -788,6 +794,10 @@
     }
     syncTrackBox();
     hintFor(f.url.value);
+
+    // 이미 등록된 업무이고, 창고에 있지 않을 때만 보냅니다.
+    var box = archiveDept();
+    $('#archiveBtn').hidden = !(link && link.id && link.dept !== box);
     if (!$('#dlgLink').open) $('#dlgLink').showModal();
     setTimeout(function () { (link ? f.title : f.url).focus(); }, 40);
   }
@@ -933,6 +943,30 @@
       (f.name.value.trim() ? f.password : f.name).focus();
     }, 50);
   }
+
+  $('#archiveBtn').addEventListener('click', function () {
+    var f = $('#linkForm');
+    var box = archiveDept();
+    var msg = '"' + f.title.value.trim() + '"' + '\n\n' +
+      '정말로 ' + box + ' 로 보내겠습니까?\n\n' +
+      '목록에서 내려가고 제목 앞에 [' + f.dept.value + '] 가 붙습니다.\n' +
+      '지워지는 것은 아니며 ' + box + ' 카드에서 계속 보실 수 있습니다.';
+    if (!confirm(msg)) return;
+
+    var btn = $('#archiveBtn');
+    btn.disabled = true; btn.textContent = '보내는 중…';
+
+    api('archiveLink', { id: f.id.value }).then(function (d) {
+      state.links = d.links;
+      $('#dlgLink').close();
+      renderAll();
+      toast(d.archived + ' 로 보냈습니다');
+    }).catch(function (err) {
+      showErr(f, err.message);
+    }).then(function () {
+      btn.disabled = false; btn.textContent = '📦 창고로 보내기';
+    });
+  });
 
   /* 비밀번호 재설정 — 등록된 이메일로 코드를 받아 새로 정합니다. */
   $('#forgotBtn').addEventListener('click', function () {

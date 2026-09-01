@@ -66,6 +66,7 @@ function handle(req) {
       case 'confirmReset':   return json(actConfirmReset(req));
       case 'uploadFile':     return json(actUploadFile(req));
       case 'saveLink':       return json(actSaveLink(req));
+      case 'archiveLink':    return json(actArchiveLink(req));
       case 'deleteLink':     return json(actDeleteLink(req));
       case 'reorder':        return json(actReorder(req));
       case 'listUsers':      return json(actListUsers(req));
@@ -474,6 +475,45 @@ function actSaveLink(req) {
   return { ok: true, link: record, links: readLinks() };
 }
 
+/**
+ * 끝난 업무를 창고로 옮깁니다.
+ *
+ * 지우지 않고 부서만 창고로 바꾸고, 제목 앞에 원래 부서를 붙여
+ * 나중에 어느 부서 일이었는지 알아볼 수 있게 합니다.
+ */
+function actArchiveLink(req) {
+  var me = requireUser(req);
+  assertHasEmail(me);
+
+  var id = String(req.id || '');
+  var box = archiveDept();
+  var sh = sheet(SHEET_LINKS);
+  var rows = readSheet(sh, LINK_COLS);
+
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].id !== id) continue;
+
+    var from = String(rows[i].dept || '').trim();
+    if (from === box) throw new Error('이미 창고에 있는 업무입니다.');
+    assertCanEdit(me, from);
+
+    var title = String(rows[i].title || '').trim();
+    // 이미 [부서명] 이 붙어 있으면 또 붙이지 않습니다.
+    if (title.indexOf('[' + from + ']') !== 0) title = '[' + from + '] ' + title;
+
+    var record = rows[i];
+    record.dept = box;
+    record.title = title;
+    record.sort = nextSort(rows, box);      // 창고 안에서 가장 최근 자리에
+    record.updatedBy = me.name;
+    record.updatedAt = now();
+
+    writeRow(sh, i + 2, LINK_COLS, record);
+    return { ok: true, links: readLinks(), archived: box };
+  }
+  throw new Error('보낼 업무를 찾을 수 없습니다.');
+}
+
 function actDeleteLink(req) {
   var me = requireUser(req);
   assertHasEmail(me);
@@ -863,9 +903,25 @@ function readConfig() {
   return o;
 }
 
+/**
+ * 끝난 업무를 모아 두는 '창고' 부서 이름.
+ * config 시트의 archiveDept 로 바꿀 수 있고, 없으면 올해로 만듭니다.
+ */
+function archiveDept() {
+  var set = String(readConfig().archiveDept || '').trim();
+  return set || ('창고(' + new Date().getFullYear() + ')');
+}
+
 function deptList() {
-  return String(readConfig().depts || '')
+  var list = String(readConfig().depts || '')
     .split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+
+  // 창고는 늘 맨 뒤에 둡니다. 화면에서도 마지막 카드로 나옵니다.
+  var box = archiveDept();
+  var at = list.indexOf(box);
+  if (at >= 0) list.splice(at, 1);
+  list.push(box);
+  return list;
 }
 
 /**

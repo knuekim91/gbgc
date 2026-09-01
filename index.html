@@ -119,7 +119,10 @@
 <!-- 업무 추가 / 수정 -->
 <dialog id="dlgLink" class="dlg">
   <form method="dialog" class="dlg-body" id="linkForm">
-    <h2 id="linkFormTitle">업무 추가</h2>
+    <div class="dlg-head">
+      <h2 id="linkFormTitle">업무 추가</h2>
+      <button type="button" id="archiveBtn" class="linklike archive-btn" hidden>📦 창고로 보내기</button>
+    </div>
     <input type="hidden" name="id">
     <label>부서
       <select name="dept" required></select>
