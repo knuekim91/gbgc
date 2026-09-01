@@ -195,8 +195,15 @@
    */
   function parseDdays(raw) {
     var year = new Date().getFullYear();
-    return String(raw || '').split(',').map(function (part) {
-      var at = part.lastIndexOf('=');
+    // 줄바꿈으로도, 쉼표로도 나눌 수 있게 합니다.
+    // 이름과 날짜는 마지막 '=' 나 마지막 ',' 로 가릅니다.
+    return String(raw || '').split(/[\r\n]+/).reduce(function (acc, line) {
+      return acc.concat(line.indexOf('=') >= 0 ? line.split(',') : [line]);
+    }, []).map(function (part) {
+      part = part.trim();
+      if (!part) return null;
+
+      var at = Math.max(part.lastIndexOf('='), part.lastIndexOf(','));
       if (at < 0) return null;
 
       var label = part.slice(0, at).trim();
@@ -996,6 +1003,12 @@
     renderMyDepts();
 
     var isAdmin = me.role === 'admin';
+    $('#ddayForm').hidden = !isAdmin;
+    if (isAdmin) {
+      $('#ddayForm').dday.value = ddayToText(state.config.dday);
+      showErr($('#ddayForm'), '');
+      previewDdays();
+    }
     $('#adminPane').hidden = !isAdmin;
     if (isAdmin) loadUsers();
     $('#dlgAccount').showModal();
@@ -1054,6 +1067,47 @@
   // 한 번에 전부 고르거나 전부 뺍니다.
   $('#pickAll').addEventListener('click', function () {
     saveDepts(myOwnDepts().length === state.depts.length ? [] : state.depts.slice());
+  });
+
+  /** 저장된 값을 편집하기 좋은 여러 줄 형태로 바꿉니다. */
+  function ddayToText(raw) {
+    return parseDdays(raw).map(function (d) {
+      var m = ('0' + (d.date.getMonth() + 1)).slice(-2);
+      var day = ('0' + d.date.getDate()).slice(-2);
+      return d.label + ', ' + d.date.getFullYear() + '-' + m + '-' + day;
+    }).join('\n');
+  }
+
+  function previewDdays() {
+    var items = parseDdays($('#ddayForm').dday.value);
+    $('#ddayPreview').textContent = items.length
+      ? items.length + '개 인식했습니다'
+      : '아직 알아볼 수 있는 줄이 없습니다';
+  }
+  $('#ddayForm').dday.addEventListener('input', previewDdays);
+
+  $('#ddayForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target;
+    showErr(f, '');
+
+    var text = f.dday.value;
+    if (text.trim() && !parseDdays(text).length) {
+      return showErr(f, '날짜를 알아볼 수 없습니다.\n' +
+        '"1차 입학설명회, 2026-09-11" 처럼 적어 주세요.');
+    }
+    // 시트에는 한 줄짜리로 담습니다.
+    var one = parseDdays(text).map(function (d) {
+      var m = ('0' + (d.date.getMonth() + 1)).slice(-2);
+      var day = ('0' + d.date.getDate()).slice(-2);
+      return d.label + '=' + d.date.getFullYear() + '-' + m + '-' + day;
+    }).join(', ');
+
+    api('saveConfig', { config: { dday: one } }).then(function (d) {
+      state.config = d.config;
+      renderDdays();
+      toast('일정을 저장했습니다');
+    }).catch(function (err) { showErr(f, err.message); });
   });
 
   $('#acctClose').addEventListener('click', function () { $('#dlgAccount').close(); });

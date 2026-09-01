@@ -229,6 +229,20 @@
       <p class="err" data-err hidden></p>
     </form>
 
+    <form id="ddayForm" class="panel stack" hidden>
+      <h3>상단 일정 (D-day) <span class="muted small">(관리자)</span></h3>
+      <p class="hint">
+        한 줄에 하나씩 <b>이름, 날짜</b> 순으로 적어 주세요. 지난 일정은 저절로 사라집니다.
+      </p>
+      <textarea name="dday" rows="4" spellcheck="false"
+                placeholder="1차 입학설명회, 2026-09-11&#10;방학, 2026-12-30"></textarea>
+      <p class="err" data-err hidden></p>
+      <div class="inline">
+        <span class="hint grow" id="ddayPreview"></span>
+        <button class="btn btn-primary" type="submit">저장</button>
+      </div>
+    </form>
+
     <section id="adminPane" class="panel" hidden>
       <h3>교직원 계정 <span class="muted small">(관리자)</span></h3>
       <div class="utable" id="userList"></div>
