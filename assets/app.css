@@ -338,15 +338,17 @@ code {
 .cal-date.sat { color: #2f6df6; }
 .cal-day.today .cal-date { color: var(--accent); }
 
+/* 칸이 좁아 부서명은 넣지 않습니다. 대신 제목 자체를 부서 색으로 칠하고
+   왼쪽에 색 띠를 둘러, 같은 부서 일정이 한눈에 묶여 보이게 했습니다. */
 .cal-ev {
   display: block; width: 100%; text-align: left; cursor: pointer;
-  font: inherit; font-size: 11.5px; line-height: 1.45;
-  border: 0; border-radius: 5px; padding: 3px 5px;
-  background: var(--panel); color: var(--ink);
+  font: inherit; font-size: 11.5px; line-height: 1.45; font-weight: 600;
+  border: 0; border-left: 3px solid var(--dept, var(--accent));
+  border-radius: 4px; padding: 3px 5px;
+  background: var(--dept-bg); color: var(--dept-ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.cal-ev:hover { background: var(--line-2); }
-.cal-ev b { font-weight: 800; margin-right: 3px; }
+.cal-ev:hover { background: var(--dept-bg2); }
 
 /* 캘린더에서 눌러 찾아간 업무를 잠깐 표시합니다. */
 .item.flash { animation: itemFlash 1.2s ease-out; }
@@ -360,7 +362,12 @@ code {
   .cal-day { padding: 3px; }
   .calendar.w2 .cal-day { min-height: 82px; }
   .calendar.w4 .cal-day { min-height: 62px; }
-  .cal-ev { font-size: 10.5px; padding: 2px 3px; }
+  /* 폭이 좁아 한 줄로는 몇 글자 못 봅니다. 두 줄까지 풀어 줍니다. */
+  .cal-ev {
+    font-size: 10.5px; padding: 2px 3px; line-height: 1.25;
+    white-space: normal; word-break: break-all;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -377,6 +384,35 @@ code {
   align-items: start;
 }
 
+/* 부서색 파생 — 글자용은 진하게, 배경용은 옅게 깝니다.
+   밝은 화면과 어두운 화면에서 읽히는 진하기가 달라 각각 잡았습니다. */
+.card, .cal-ev, .tag.dept, .chip.dept {
+  --dept-ink: color-mix(in srgb, var(--dept) 82%, #0b0e13);
+  --dept-bg:  color-mix(in srgb, var(--dept) 14%, transparent);
+  --dept-bg2: color-mix(in srgb, var(--dept) 20%, transparent);
+  --dept-bd:  color-mix(in srgb, var(--dept) 28%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .card,
+  :root:not([data-theme="light"]) .cal-ev,
+  :root:not([data-theme="light"]) .tag.dept,
+  :root:not([data-theme="light"]) .chip.dept {
+    --dept-ink: color-mix(in srgb, var(--dept) 55%, #ffffff);
+    --dept-bg:  color-mix(in srgb, var(--dept) 16%, transparent);
+    --dept-bg2: color-mix(in srgb, var(--dept) 28%, transparent);
+    --dept-bd:  color-mix(in srgb, var(--dept) 38%, transparent);
+  }
+}
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .cal-ev,
+:root[data-theme="dark"] .tag.dept,
+:root[data-theme="dark"] .chip.dept {
+  --dept-ink: color-mix(in srgb, var(--dept) 55%, #ffffff);
+  --dept-bg:  color-mix(in srgb, var(--dept) 16%, transparent);
+  --dept-bg2: color-mix(in srgb, var(--dept) 28%, transparent);
+  --dept-bd:  color-mix(in srgb, var(--dept) 38%, transparent);
+}
+
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -388,10 +424,14 @@ code {
 .card-head {
   display: flex; align-items: center; gap: 9px;
   padding: 13px 15px;
-  border-bottom: 1px solid var(--line-2);
-  border-left: 4px solid var(--dept, var(--accent));
+  background: var(--dept-bg);
+  border-bottom: 1px solid var(--dept-bd);
+  border-left: 5px solid var(--dept, var(--accent));
 }
-.card-head h2 { margin: 0; font-size: 14.5px; letter-spacing: -.2px; flex: 1; }
+.card-head h2 {
+  margin: 0; font-size: 14.5px; letter-spacing: -.2px; flex: 1;
+  color: var(--dept-ink); font-weight: 700;
+}
 .card-head .count {
   font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums;
 }
@@ -477,7 +517,7 @@ code {
 .tag.due    { background: var(--warn-bg); color: var(--warn-ink); }
 .tag.urgent { background: var(--due-bg);  color: var(--due-ink); }
 .tag.past   { background: var(--line-2);  color: var(--ink-3); text-decoration: line-through; }
-.tag.dept   { background: color-mix(in srgb, var(--dept) 15%, transparent); color: var(--dept); }
+.tag.dept   { background: var(--dept-bg); color: var(--dept-ink); font-weight: 600; }
 
 /* 수합 현황 */
 .prog {
@@ -834,3 +874,19 @@ input:focus, select:focus, textarea:focus {
 /* 창고에서 원래 부서로 되돌리는 단추 — 눈에 띄도록 초록으로 */
 .tool.back { color: #1f9d55; font-weight: 700; }
 .tool.back:hover { background: #e6f6ec; }
+
+/* 부서 칩 — 앞에 부서 색 점을 두고, 고르면 그 색으로 채웁니다.
+   칩 → 카드 머리 → 캘린더 일정이 같은 색으로 이어집니다. */
+.chip.dept::before {
+  content: ''; display: inline-block;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--dept); margin-right: 6px;
+  vertical-align: 1px;
+}
+.chip.dept { color: var(--dept-ink); border-color: var(--dept-bd); }
+.chip.dept:hover { background: var(--dept-bg); border-color: var(--dept); }
+.chip.dept[aria-pressed="true"] {
+  background: var(--dept); border-color: var(--dept);
+  color: #fff; font-weight: 600;
+}
+.chip.dept[aria-pressed="true"]::before { background: #fff; opacity: .9; }

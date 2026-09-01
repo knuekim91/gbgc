@@ -304,17 +304,20 @@
     // 선생님에게만 보여 줍니다. 그래야 첫 업무를 올릴 길이 생깁니다.
     var editable = hasEmail() ? myDepts() : [];
     state.depts.forEach(function (d) {
-      if (counts[d]) items.push({ id: d, label: d, n: counts[d] });
-      else if (editable.indexOf(d) >= 0) items.push({ id: d, label: d, n: null });
+      if (counts[d]) items.push({ id: d, label: d, n: counts[d], dept: true });
+      else if (editable.indexOf(d) >= 0) items.push({ id: d, label: d, n: null, dept: true });
     });
     // config 목록에 없는 부서가 데이터에 있으면 뒤에 붙입니다.
     Object.keys(counts).forEach(function (d) {
-      if (state.depts.indexOf(d) < 0) items.push({ id: d, label: d, n: counts[d] });
+      if (state.depts.indexOf(d) < 0) items.push({ id: d, label: d, n: counts[d], dept: true });
     });
 
+    // 부서 칩에는 그 부서 색을 물려 카드·캘린더와 같은 색으로 이어 줍니다.
     $('#chips').innerHTML = items.map(function (it) {
-      return '<button class="chip" type="button" data-f="' + esc(it.id) + '" aria-pressed="' +
-        (state.filter === it.id) + '">' + esc(it.label) +
+      return '<button class="chip' + (it.dept ? ' dept' : '') + '" type="button"' +
+        ' data-f="' + esc(it.id) + '" aria-pressed="' + (state.filter === it.id) + '"' +
+        (it.dept ? ' style="--dept:' + deptColor(it.id) + '"' : '') + '>' +
+        esc(it.label) +
         (it.n != null ? '<span class="n">' + it.n + '</span>' : '') + '</button>';
     }).join('');
   }
@@ -514,8 +517,6 @@
            '-' + ('0' + d.getDate()).slice(-2);
   }
 
-  /** 부서 이름을 두 글자로 줄입니다. 교무부 → 교무 */
-  function deptShort(name) { return String(name || '').slice(0, 2); }
 
   function renderCalendar() {
     var weeks = Number(state.cal) || 0;
@@ -570,9 +571,11 @@
           (d.getDate() === 1 ? (d.getMonth() + 1) + '/' : '') + d.getDate() +
         '</div>' +
         list.map(function (l) {
+          // 칸이 좁아 부서명은 빼고 제목만 둡니다. 대신 제목을 부서 색으로 칠해
+          // 어느 부서 일인지 보이게 했습니다. 부서명은 마우스를 올리면 나옵니다.
           return '<button type="button" class="cal-ev" data-goto="' + esc(l.id) + '"' +
+            ' style="--dept:' + deptColor(l.dept) + '"' +
             ' title="' + esc(l.dept + ' · ' + l.title) + '">' +
-            '<b style="color:' + deptColor(l.dept) + '">' + esc(deptShort(l.dept)) + '</b> ' +
             esc(l.title) + '</button>';
         }).join('') +
       '</div>';
