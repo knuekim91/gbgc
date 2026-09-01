@@ -1034,8 +1034,14 @@
   });
 
   function loadUsers() {
-    api('listUsers').then(function (d) { state.users = d.users; renderUsers(); })
-      .catch(function (err) { toast(err.message, true); });
+    $('#userList').innerHTML = '<p class="hint">불러오는 중…</p>';
+    api('listUsers').then(function (d) {
+      state.users = d.users || [];
+      renderUsers();
+    }).catch(function (err) {
+      // 목록이 그냥 비어 보이면 원인을 알 수 없으므로 자리에 사유를 적습니다.
+      $('#userList').innerHTML = '<p class="hint err-inline">명단을 불러오지 못했습니다.<br>' + esc(err.message) + '</p>';
+    });
   }
 
   /** 최근 로그인 — 날짜와 함께 "오늘/어제/N일 전"을 덧붙입니다. */
@@ -1055,28 +1061,37 @@
 
   function renderUsers() {
     if (!state.users.length) {
-      $('#userList').innerHTML = '<p class="hint">아직 로그인한 선생님이 없습니다.</p>';
+      $('#userList').innerHTML =
+        '<p class="hint">교직원 명단이 비어 있습니다. teachers 시트를 확인해 주세요.</p>';
       return;
     }
+    var joined = state.users.filter(function (u) { return u.joined; }).length;
+
     $('#userList').innerHTML =
       '<div class="uhead"><span>아이디</span><span>접속시간</span>' +
         '<span title="비밀번호 초기화">초기화</span><span title="계정 삭제">삭제</span></div>' +
       state.users.map(function (u) {
-        return '<div class="urow">' +
+        // 아직 한 번도 로그인하지 않은 분은 되돌리거나 지울 계정이 없습니다.
+        var tools = u.joined
+          ? '<button class="tool" type="button" data-reset="' + esc(u.name) + '" title="비밀번호 초기화">↺</button>' +
+            (u.top ? '<span class="tool" aria-hidden="true"></span>'
+                   : '<button class="tool" type="button" data-udel="' + esc(u.name) + '" title="계정 삭제">🗑</button>')
+          : '<span class="tool" aria-hidden="true"></span><span class="tool" aria-hidden="true"></span>';
+
+        return '<div class="urow' + (u.joined ? '' : ' pending') + '">' +
           '<span class="uname">' + esc(u.name) +
             (u.top ? '<span class="badge top">최고관리자</span>'
                    : u.role === 'admin' ? '<span class="badge">관리자</span>' : '') +
-            (u.mustChange ? '<span class="badge warn">초기 비번</span>' : '') +
-            (u.email ? '' : '<span class="badge warn">메일 없음</span>') +
+            (u.joined && u.mustChange ? '<span class="badge warn">초기 비번</span>' : '') +
+            (u.joined && !u.email ? '<span class="badge warn">메일 없음</span>' : '') +
             '<span class="udept">' + esc(u.dept || '부서 없음') + '</span>' +
           '</span>' +
-          '<span class="ulast">' + loginAgo(u.lastLogin) + '</span>' +
-          '<button class="tool" type="button" data-reset="' + esc(u.name) + '" title="비밀번호 초기화">↺</button>' +
-          // 최고관리자는 지울 수 없습니다. 서버도 막지만 버튼부터 감춥니다.
-          (u.top ? '<span class="tool" aria-hidden="true"></span>'
-                 : '<button class="tool" type="button" data-udel="' + esc(u.name) + '" title="계정 삭제">🗑</button>') +
+          '<span class="ulast">' +
+            (u.joined ? loginAgo(u.lastLogin) : '<span class="never">미가입</span>') +
+          '</span>' + tools +
         '</div>';
-      }).join('');
+      }).join('') +
+      '<p class="hint utotal">전체 ' + state.users.length + '명 중 ' + joined + '명 가입</p>';
   }
 
   $('#userList').addEventListener('click', function (e) {

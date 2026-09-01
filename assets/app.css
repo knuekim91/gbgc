@@ -501,6 +501,9 @@ input:focus, select:focus, textarea:focus {
 }
 .badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
 .badge.top { background: var(--accent); color: var(--accent-ink); }
+.urow.pending .uname { color: var(--ink-3); }
+.utotal { padding-top: 6px; text-align: right; }
+.err-inline { color: var(--danger); }
 
 @media (max-width: 560px) {
   .uhead { display: none; }

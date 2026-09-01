@@ -506,9 +506,48 @@ function actReorder(req) {
   return { ok: true, links: readLinks() };
 }
 
+/**
+ * 교직원 명단 전체를 돌려줍니다.
+ *
+ * teachers 시트를 기준으로 세우고, 계정이 있으면 그 정보를 붙입니다.
+ * 아직 한 번도 로그인하지 않은 분은 joined=false 로 표시해
+ * "누가 아직 안 들어왔는지" 가 한눈에 보이게 합니다.
+ */
 function actListUsers(req) {
   requireAdmin(req);
-  return { ok: true, users: readSheet(sheet(SHEET_USERS), USER_COLS).map(publicUser) };
+
+  var accounts = readSheet(sheet(SHEET_USERS), USER_COLS);
+  var byName = {};
+  accounts.forEach(function (u) {
+    var key = String(u.name || '').replace(/\s+/g, '');
+    if (key) byName[key] = u;
+  });
+
+  var out = [];
+  var rosterSheet = ss().getSheetByName(SHEET_TEACHERS);
+  var roster = rosterSheet ? readSheet(rosterSheet, TEACHER_COLS) : [];
+
+  roster.forEach(function (t) {
+    var key = String(t.name || '').replace(/\s+/g, '');
+    if (!key) return;
+
+    if (byName[key]) {
+      out.push(publicUser(byName[key]));
+      delete byName[key];
+      return;
+    }
+    out.push({
+      name: String(t.name).trim(),
+      dept: String(t.dept || '').trim(),
+      role: 'teacher', top: false, email: '',
+      lastLogin: '', mustChange: false, joined: false
+    });
+  });
+
+  // 명단에는 없는데 계정만 있는 경우도 빠뜨리지 않습니다.
+  Object.keys(byName).forEach(function (k) { out.push(publicUser(byName[k])); });
+
+  return { ok: true, users: out };
 }
 
 function actSaveUser(req) {
@@ -886,6 +925,7 @@ function publicUser(u) {
     top: isSuperAdmin(u.name),
     email: String(u.email || '').trim(),
     lastLogin: asDateTimeText(u.lastLogin),
+    joined: true,
     mustChange: String(u.mustChange || '').toUpperCase() === 'Y'
   };
 }
