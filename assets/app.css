@@ -454,9 +454,16 @@ input:focus, select:focus, textarea:focus {
 
 /* 이메일 입력 + 저장 버튼 한 줄 */
 .inline { display: flex; gap: 7px; align-items: center; }
-#ddayForm textarea {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px; line-height: 1.7; resize: vertical;
+/* 일정 추가 줄 — 이름 / 날짜 / 추가 */
+.ddayadd { display: flex; gap: 7px; align-items: center; }
+.ddayadd input[name="label"] { flex: 1; min-width: 0; }
+.ddayadd input[name="date"] { width: 160px; flex-shrink: 0; }
+.ddayadd button { flex-shrink: 0; }
+#ddayList .dday-date { font-size: 12px; }
+
+@media (max-width: 560px) {
+  .ddayadd { flex-wrap: wrap; }
+  .ddayadd input[name="date"] { width: auto; flex: 1; }
 }
 .inline input { flex: 1; min-width: 0; }
 .inline button { flex-shrink: 0; }

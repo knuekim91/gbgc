@@ -1003,11 +1003,11 @@
     renderMyDepts();
 
     var isAdmin = me.role === 'admin';
-    $('#ddayForm').hidden = !isAdmin;
+    $('#ddaySection').hidden = !isAdmin;
     if (isAdmin) {
-      $('#ddayForm').dday.value = ddayToText(state.config.dday);
-      showErr($('#ddayForm'), '');
-      previewDdays();
+      $('#ddayForm').reset();
+      showErr($('#ddaySection'), '');
+      renderDdayList();
     }
     $('#adminPane').hidden = !isAdmin;
     if (isAdmin) loadUsers();
@@ -1069,45 +1069,63 @@
     saveDepts(myOwnDepts().length === state.depts.length ? [] : state.depts.slice());
   });
 
-  /** 저장된 값을 편집하기 좋은 여러 줄 형태로 바꿉니다. */
-  function ddayToText(raw) {
-    return parseDdays(raw).map(function (d) {
-      var m = ('0' + (d.date.getMonth() + 1)).slice(-2);
-      var day = ('0' + d.date.getDate()).slice(-2);
-      return d.label + ', ' + d.date.getFullYear() + '-' + m + '-' + day;
-    }).join('\n');
+  /* ── 상단 일정(D-day) 관리 ───────────────────────── */
+
+  function ymd(date) {
+    return date.getFullYear() + '-' +
+      ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+      ('0' + date.getDate()).slice(-2);
   }
 
-  function previewDdays() {
-    var items = parseDdays($('#ddayForm').dday.value);
-    $('#ddayPreview').textContent = items.length
-      ? items.length + '개 인식했습니다'
-      : '아직 알아볼 수 있는 줄이 없습니다';
+  function renderDdayList() {
+    var items = parseDdays(state.config.dday);
+    $('#ddayList').innerHTML = items.map(function (d, i) {
+      return '<div class="attached">' +
+        '<b class="grow">' + esc(d.label) + '</b>' +
+        '<span class="dday-date">' + ymd(d.date) + '</span>' +
+        '<button type="button" class="tool" data-ddel="' + i + '" title="빼기" aria-label="' +
+          esc(d.label) + ' 빼기">✕</button>' +
+      '</div>';
+    }).join('') || '<p class="hint">아직 등록한 일정이 없습니다.</p>';
   }
-  $('#ddayForm').dday.addEventListener('input', previewDdays);
+
+  /** 목록을 한 줄짜리 설정값으로 담아 저장합니다. */
+  function saveDdays(items) {
+    var one = items.map(function (d) { return d.label + '=' + ymd(d.date); }).join(', ');
+    return api('saveConfig', { config: { dday: one } }).then(function (r) {
+      state.config = r.config;
+      renderDdayList();
+      renderDdays();
+    });
+  }
 
   $('#ddayForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target;
-    showErr(f, '');
+    showErr($('#ddaySection'), '');
 
-    var text = f.dday.value;
-    if (text.trim() && !parseDdays(text).length) {
-      return showErr(f, '날짜를 알아볼 수 없습니다.\n' +
-        '"1차 입학설명회, 2026-09-11" 처럼 적어 주세요.');
-    }
-    // 시트에는 한 줄짜리로 담습니다.
-    var one = parseDdays(text).map(function (d) {
-      var m = ('0' + (d.date.getMonth() + 1)).slice(-2);
-      var day = ('0' + d.date.getDate()).slice(-2);
-      return d.label + '=' + d.date.getFullYear() + '-' + m + '-' + day;
-    }).join(', ');
+    var label = f.label.value.trim();
+    var date = f.date.value;
+    if (!label || !date) return showErr($('#ddaySection'), '이름과 날짜를 모두 넣어 주세요.');
 
-    api('saveConfig', { config: { dday: one } }).then(function (d) {
-      state.config = d.config;
-      renderDdays();
-      toast('일정을 저장했습니다');
-    }).catch(function (err) { showErr(f, err.message); });
+    var items = parseDdays(state.config.dday);
+    items.push({ label: label, date: new Date(date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10)) });
+    items.sort(function (a, b) { return a.date - b.date; });
+
+    saveDdays(items).then(function () {
+      f.reset();
+      f.label.focus();
+      toast('일정을 추가했습니다');
+    }).catch(function (err) { showErr($('#ddaySection'), err.message); });
+  });
+
+  $('#ddayList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-ddel]');
+    if (!b) return;
+    var items = parseDdays(state.config.dday);
+    items.splice(Number(b.dataset.ddel), 1);
+    saveDdays(items).then(function () { toast('일정을 뺐습니다'); })
+      .catch(function (err) { showErr($('#ddaySection'), err.message); });
   });
 
   $('#acctClose').addEventListener('click', function () { $('#dlgAccount').close(); });
