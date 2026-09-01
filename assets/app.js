@@ -751,16 +751,6 @@
     }, 50);
   }
 
-  /**
-   * 이름을 다 치면 비밀번호 칸으로 옮겨 갑니다.
-   * 이 학교 교직원 68명이 모두 세 글자라 세 글자에서 넘깁니다.
-   * 네 글자 이름이면 이름 칸을 다시 눌러 이어 치시면 됩니다.
-   */
-  $('#loginForm').name.addEventListener('input', function (e) {
-    var f = $('#loginForm');
-    if (e.target.value.trim().length === 3 && !f.password.value) f.password.focus();
-  });
-
   /* 비밀번호 재설정 — 등록된 이메일로 코드를 받아 새로 정합니다. */
   $('#forgotBtn').addEventListener('click', function () {
     var ask = $('#resetAskForm'), doIt = $('#resetDoForm');
