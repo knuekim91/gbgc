@@ -150,10 +150,26 @@
 
   /* ── 렌더링 ───────────────────────── */
 
+  /**
+   * 화면에 뿌릴 순서를 정합니다.
+   *
+   * sort 값은 등록할 때 한 번 정해지고 수정해도 그대로이므로,
+   * 큰 값부터 늘어놓으면 "나중에 올린 것이 위" 가 됩니다.
+   * 마감 임박 화면만은 급한 것이 위로 와야 해서 마감일 순으로 둡니다.
+   */
+  function orderFor(links) {
+    if (state.filter === 'due') {
+      return links.sort(function (a, b) {
+        return (daysLeft(a.deadline) || 0) - (daysLeft(b.deadline) || 0);
+      });
+    }
+    return links.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+  }
+
   function visibleLinks() {
     var q = state.q.trim().toLowerCase();
     var fav = favs();
-    return state.links.filter(function (l) {
+    return orderFor(state.links.filter(function (l) {
       if (state.filter === 'fav' && fav.indexOf(l.id) < 0) return false;
       if (state.filter === 'due') {
         var n = daysLeft(l.deadline);
@@ -168,7 +184,7 @@
         return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
       }
       return true;
-    });
+    }));
   }
 
   function renderChips() {
