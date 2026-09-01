@@ -350,6 +350,9 @@ code {
   text-decoration: none; display: inline-flex; align-items: center;
 }
 .tool:hover { background: var(--line-2); color: var(--ink); }
+.tool[disabled] { opacity: .25; cursor: default; }
+.tool[disabled]:hover { background: none; color: var(--ink-3); }
+.tool[data-move] { font-size: 10px; padding: 4px 4px; }
 .tool.star.on { color: #f0a800; }
 
 .empty-dept { padding: 14px 15px; color: var(--ink-3); font-size: 13px; }

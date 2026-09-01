@@ -493,13 +493,15 @@ function actReorder(req) {
   var dept = String(req.dept || '');
   assertHasEmail(me);
   assertCanEdit(me, dept);
+  // ids 는 화면에 보이는 순서(위에서 아래로) 그대로 옵니다.
+  // 화면은 sort 가 큰 것부터 보여 주므로, 맨 위가 가장 큰 값을 받도록 거꾸로 매깁니다.
   var ids = req.ids || [];
   var sh = sheet(SHEET_LINKS);
   var rows = readSheet(sh, LINK_COLS);
   var sortCol = LINK_COLS.indexOf('sort') + 1;
   for (var i = 0; i < rows.length; i++) {
     var pos = ids.indexOf(rows[i].id);
-    if (pos >= 0) sh.getRange(i + 2, sortCol).setValue((pos + 1) * 10);
+    if (pos >= 0) sh.getRange(i + 2, sortCol).setValue((ids.length - pos) * 10);
   }
   return { ok: true, links: readLinks() };
 }

@@ -268,13 +268,31 @@
                       '" title="' + esc(g.dept) + '에 업무 추가" aria-label="' + esc(g.dept) + '에 업무 추가">＋</button>' : '') +
         '</div>' +
         (g.items.length
-          ? '<ul class="items">' + g.items.map(function (l) { return itemHtml(l, fav, editable); }).join('') + '</ul>'
+          ? '<ul class="items">' + g.items.map(function (l, i) {
+              return itemHtml(l, fav, editable, i === 0, i === g.items.length - 1);
+            }).join('') + '</ul>'
           : '<p class="empty-dept">아직 등록된 업무가 없습니다. ＋ 를 눌러 추가해 주세요.</p>') +
       '</section>';
     }).join('');
   }
 
   // 수합 현황 배지 — 대상 인원을 적어 두면 막대와 함께, 아니면 건수만 보여 줍니다.
+  /**
+   * 순서 바꾸기를 보여 줄 만한 화면인지 봅니다.
+   * 검색 중이거나 즐겨찾기·마감 임박 화면에서는 눈에 보이는 이웃과
+   * 실제 부서 안의 이웃이 달라서 헷갈리므로 감춥니다.
+   */
+  function canReorder() {
+    return !state.q && state.filter !== 'due' && state.filter !== 'fav';
+  }
+
+  /** 그 부서의 업무를 화면에 보이는 순서(위에서 아래)대로 돌려줍니다. */
+  function deptItems(dept) {
+    return state.links
+      .filter(function (l) { return l.dept === dept; })
+      .sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+  }
+
   function fileCount(l) { return (l.files || []).length; }
   function fileNames(l) {
     return (l.files || []).map(function (f) { return f.name || ''; }).join(' ');
@@ -296,7 +314,7 @@
     '</span>';
   }
 
-  function itemHtml(l, fav, editable) {
+  function itemHtml(l, fav, editable, first, last) {
     var type = l.type || detectType(l.url);
     var starred = fav.indexOf(l.id) >= 0;
     var showDept = state.filter === 'fav' || state.filter === 'due' || !!state.q;
@@ -330,6 +348,12 @@
           (l.url
             ? '<a class="tool" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer" aria-label="새 탭에서 열기" title="새 탭에서 열기">↗</a>' +
               '<button class="tool" type="button" data-copy="' + esc(l.id) + '" aria-label="주소 복사">⧉</button>'
+            : '') +
+          (editable && canReorder()
+            ? '<button class="tool" type="button" data-move="up" data-id="' + esc(l.id) + '"' +
+                (first ? ' disabled' : '') + ' title="위로" aria-label="위로 옮기기">▲</button>' +
+              '<button class="tool" type="button" data-move="down" data-id="' + esc(l.id) + '"' +
+                (last ? ' disabled' : '') + ' title="아래로" aria-label="아래로 옮기기">▼</button>'
             : '') +
           (editable
             ? '<button class="tool" type="button" data-edit="' + esc(l.id) + '" aria-label="수정">✎</button>' +
@@ -539,6 +563,10 @@
       el.setAttribute('aria-expanded', String(nowOpen));
       return;
     }
+    if ((el = e.target.closest('[data-move]'))) {
+      moveItem(el.dataset.id, el.dataset.move);
+      return;
+    }
     if ((el = e.target.closest('[data-star]'))) {
       var on = toggleFav(el.dataset.star);
       el.classList.toggle('on', on);
@@ -625,6 +653,29 @@
 
   // 업무 추가 / 수정
   $('#fab').addEventListener('click', function () { openLinkForm(null, myDepts()[0]); });
+
+  /** 이웃과 자리를 바꿉니다. 화면을 먼저 고치고 서버에 알립니다. */
+  function moveItem(id, dir) {
+    var item = state.links.filter(function (l) { return l.id === id; })[0];
+    if (!item) return;
+
+    var list = deptItems(item.dept);
+    var at = list.map(function (l) { return l.id; }).indexOf(id);
+    var to = dir === 'up' ? at - 1 : at + 1;
+    if (to < 0 || to >= list.length) return;
+
+    list.splice(to, 0, list.splice(at, 1)[0]);
+    // 화면이 보는 값(sort 내림차순)을 새 순서에 맞춰 다시 매깁니다.
+    list.forEach(function (l, i) { l.sort = (list.length - i) * 10; });
+    renderBoard();
+
+    api('reorder', { dept: item.dept, ids: list.map(function (l) { return l.id; }) })
+      .then(function (d) { state.links = d.links; })
+      .catch(function (err) {
+        toast(err.message, true);
+        bootstrap();          // 실패하면 서버 상태로 되돌립니다
+      });
+  }
 
   function openLinkForm(link, dept) {
     var f = $('#linkForm');
