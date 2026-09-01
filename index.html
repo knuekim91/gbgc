@@ -136,13 +136,11 @@
     </label>
 
     <div class="attach">
-      <span class="lbl">첨부파일 <span class="muted">(선택 · 5MB 이하)</span></span>
-      <input type="hidden" name="fileId">
-      <input type="hidden" name="fileName">
-      <input type="hidden" name="fileUrl">
+      <span class="lbl">첨부파일 <span class="muted">(선택 · 최대 3개 · 각 5MB 이하)</span></span>
+      <div id="attachList" class="attach-list"></div>
 
-      <div id="attachEmpty">
-        <input type="file" id="attachInput" class="filepick">
+      <div id="attachPick">
+        <input type="file" id="attachInput" class="filepick" multiple>
         <p class="hint">
           공문·양식처럼 작은 파일만 올려 주세요. 구글 드라이브의
           <code>gbgc / 부서이름</code> 폴더에 저장됩니다.
@@ -150,13 +148,8 @@
         </p>
       </div>
 
-      <div id="attachDone" class="attached" hidden>
-        <span class="clip" aria-hidden="true">📎</span>
-        <a id="attachLink" class="grow" target="_blank" rel="noopener noreferrer"></a>
-        <button type="button" class="tool" id="attachRemove" title="첨부 떼기" aria-label="첨부 떼기">✕</button>
-      </div>
-
-      <p id="attachBusy" class="hint busy" hidden>올리는 중… 파일이 크면 20초쯤 걸립니다.</p>
+      <p id="attachFull" class="hint" hidden>첨부는 3개까지입니다. 더 올리시려면 하나를 떼어 주세요.</p>
+      <p id="attachBusy" class="hint busy" hidden></p>
     </div>
 
     <div class="row2">

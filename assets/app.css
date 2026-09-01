@@ -301,6 +301,7 @@ code {
 }
 .detail dd { margin: 0; min-height: 1.4em; overflow-wrap: anywhere; }
 .detail dd.desc { white-space: pre-wrap; }
+.detail dd.files { display: flex; flex-direction: column; gap: 3px; }
 
 .panel-link { color: var(--accent); text-underline-offset: 2px; }
 
@@ -508,6 +509,8 @@ input:focus, select:focus, textarea:focus {
   border: 0; border-radius: 6px; padding: 5px 11px; margin-right: 9px;
   background: var(--accent); color: var(--accent-ink);
 }
+.attach-list { display: flex; flex-direction: column; gap: 6px; }
+.attach-list:empty { display: none; }
 .attached {
   display: flex; align-items: center; gap: 8px;
   background: var(--panel); border: 1px solid var(--line);

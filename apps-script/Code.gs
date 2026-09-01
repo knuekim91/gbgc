@@ -24,10 +24,11 @@ var HASH_ROUNDS = 600;
 // 큰 파일은 드라이브에 직접 올리고 '링크 주소' 칸을 쓰시는 편이 낫습니다.
 var DRIVE_FOLDER = 'gbgc';
 var MAX_FILE_MB = 5;
+var MAX_FILES = 3;        // 업무 하나에 붙일 수 있는 첨부 개수
 
 // track / target / email 은 뒤에 덧붙였습니다. 기존 시트를 쓰던 중이라면
 // 메뉴 [경북여상 허브 > 시트 열 최신화] 를 한 번 실행해 주세요.
-var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc','fileId','fileName','fileUrl'];
+var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc','fileId','fileName','fileUrl','files'];
 var USER_COLS = ['name','dept','role','salt','hash','mustChange','updatedAt','email','lastLogin'];
 var TEACHER_COLS = ['name','dept','title','group'];
 
@@ -360,6 +361,41 @@ function actUploadFile(req) {
   return { ok: true, file: { id: file.getId(), name: file.getName(), url: file.getUrl() } };
 }
 
+/**
+ * 첨부 목록을 꺼냅니다.
+ *
+ * files 칸에 [{id,name,url}, ...] 을 JSON 으로 담습니다.
+ * 첨부가 한 개만 되던 시절에 저장된 행은 fileId/fileName/fileUrl 을 읽어
+ * 같은 모양으로 맞춰 줍니다. 그래서 예전 데이터도 그대로 보입니다.
+ */
+/** 화면에서 온 첨부 목록을 믿을 수 있는 모양으로 다듬습니다. */
+function cleanFiles(list) {
+  if (Object.prototype.toString.call(list) !== '[object Array]') return [];
+  return list
+    .filter(function (f) { return f && String(f.id || '').trim(); })
+    .slice(0, MAX_FILES)
+    .map(function (f) {
+      return {
+        id: String(f.id).trim(),
+        name: String(f.name || '첨부파일').trim(),
+        url: String(f.url || '').trim()
+      };
+    });
+}
+
+function parseFiles(row) {
+  var raw = String(row.files || '').trim();
+  if (raw) {
+    try {
+      var list = JSON.parse(raw);
+      if (Object.prototype.toString.call(list) === '[object Array]') return list;
+    } catch (err) { /* 깨진 값이면 아래로 */ }
+  }
+  var id = String(row.fileId || '').trim();
+  if (!id) return [];
+  return [{ id: id, name: String(row.fileName || '첨부파일'), url: String(row.fileUrl || '') }];
+}
+
 function deptFolder(dept) {
   var root = childFolder(DriveApp.getRootFolder(), DRIVE_FOLDER);
   return dept ? childFolder(root, dept) : root;
@@ -412,9 +448,8 @@ function actSaveLink(req) {
     track: link.track ? 'Y' : '',
     target: Number(link.target) || '',
     desc: String(link.desc || '').trim(),
-    fileId: String(link.fileId || '').trim(),
-    fileName: String(link.fileName || '').trim(),
-    fileUrl: String(link.fileUrl || '').trim()
+    fileId: '', fileName: '', fileUrl: '',   // 예전 한 개짜리 칸은 더 쓰지 않습니다
+    files: JSON.stringify(cleanFiles(link.files))
   };
 
   if (id) {
@@ -423,9 +458,11 @@ function actSaveLink(req) {
     if (found < 0) throw new Error('수정할 링크를 찾을 수 없습니다.');
     assertCanEdit(me, rows[found].dept);
     record.sort = Number(rows[found].sort) || record.sort;
-    // 첨부파일을 바꾸거나 뗐다면 예전 파일은 휴지통으로 보냅니다.
-    var oldFile = String(rows[found].fileId || '').trim();
-    if (oldFile && oldFile !== record.fileId) trashFile(oldFile);
+    // 목록에서 빠진 첨부만 휴지통으로 보냅니다.
+    var keep = cleanFiles(link.files).map(function (f) { return f.id; });
+    parseFiles(rows[found]).forEach(function (f) {
+      if (keep.indexOf(f.id) < 0) trashFile(f.id);
+    });
     writeRow(sh, found + 2, LINK_COLS, record);
   } else {
     sh.appendRow(LINK_COLS.map(function (c) { return record[c]; }));
@@ -443,7 +480,7 @@ function actDeleteLink(req) {
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].id === id) {
       assertCanEdit(me, rows[i].dept);
-      trashFile(String(rows[i].fileId || '').trim());
+      parseFiles(rows[i]).forEach(function (f) { trashFile(f.id); });
       sh.deleteRow(i + 2);
       return { ok: true, links: readLinks() };
     }
@@ -751,6 +788,7 @@ function readLinks() {
       l.sort = Number(l.sort) || 0;
       l.deadline = asDateText(l.deadline);
       l.updatedAt = asDateText(l.updatedAt);
+      l.files = parseFiles(l);
       return l;
     })
     .sort(function (a, b) { return a.sort - b.sort; });

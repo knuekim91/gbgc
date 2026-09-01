@@ -180,7 +180,7 @@
           state.filter !== 'due' && state.filter !== 'mine' && l.dept !== state.filter) return false;
       if (q) {
         var hay = (l.title + ' ' + l.dept + ' ' + (l.note || '') + ' ' +
-                   (l.desc || '') + ' ' + (l.fileName || '')).toLowerCase();
+                   (l.desc || '') + ' ' + fileNames(l)).toLowerCase();
         return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
       }
       return true;
@@ -268,6 +268,11 @@
   }
 
   // 수합 현황 배지 — 대상 인원을 적어 두면 막대와 함께, 아니면 건수만 보여 줍니다.
+  function fileCount(l) { return (l.files || []).length; }
+  function fileNames(l) {
+    return (l.files || []).map(function (f) { return f.name || ''; }).join(' ');
+  }
+
   function progressTag(l) {
     if (String(l.track).toUpperCase() !== 'Y') return '';
     var p = state.progress[l.id];
@@ -306,7 +311,8 @@
               progressTag(l) +
               (l.note ? '<span class="tag">' + esc(l.note) + '</span>' : '') +
               (l.desc ? '<span class="tag has-desc">알릴 내용</span>' : '') +
-              (l.fileUrl ? '<span class="tag has-file">📎 첨부</span>' : '') +
+              (fileCount(l) ? '<span class="tag has-file">📎 첨부' +
+                 (fileCount(l) > 1 ? ' ' + fileCount(l) : '') + '</span>' : '') +
             '</span>' +
           '</span>' +
           '<span class="caret" aria-hidden="true">▾</span>' +
@@ -332,10 +338,11 @@
               ? '<a class="panel-link" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.url) + '</a>'
               : '') +
           '</dd>' +
-          '<dt>첨부파일</dt><dd>' +
-            (l.fileUrl
-              ? '<a class="panel-link" href="' + esc(l.fileUrl) + '" target="_blank" rel="noopener noreferrer">📎 ' + esc(l.fileName || '첨부파일') + '</a>'
-              : '') +
+          '<dt>첨부파일</dt><dd class="files">' +
+            (l.files || []).map(function (fl) {
+              return '<a class="panel-link" href="' + esc(fl.url) + '" target="_blank" rel="noopener noreferrer">📎 ' +
+                     esc(fl.name || '첨부파일') + '</a>';
+            }).join('') +
           '</dd>' +
           '<dt>알릴 내용</dt><dd class="desc">' + esc(l.desc || '') + '</dd>' +
         '</dl>' +
@@ -630,14 +637,14 @@
       f.deadline.value = link.deadline || '';
       f.note.value = link.note || '';
       f.desc.value = link.desc || '';
-      showAttach(link.fileId ? { id: link.fileId, name: link.fileName, url: link.fileUrl } : null);
+      setAttached(link.files || []);
       f.track.checked = String(link.track).toUpperCase() === 'Y';
       f.target.value = link.target || '';
       hintFor(link.url);
     } else {
       $('#linkFormTitle').textContent = '업무 추가';
       f.id.value = '';
-      showAttach(null);
+      setAttached([]);
       if (dept && allowed.indexOf(dept) >= 0) f.dept.value = dept;
     }
     syncTrackBox();
@@ -649,62 +656,99 @@
   /* ── 첨부파일 ───────────────────────── */
 
   var MAX_FILE_MB = 5;
+  var MAX_FILES = 3;
+  var attached = [];        // [{id, name, url}, ...]
 
-  function showAttach(file) {
-    var f = $('#linkForm');
-    f.fileId.value = file ? file.id : '';
-    f.fileName.value = file ? file.name : '';
-    f.fileUrl.value = file ? file.url : '';
+  function renderAttach() {
+    $('#attachList').innerHTML = attached.map(function (f, i) {
+      return '<div class="attached">' +
+        '<span class="clip" aria-hidden="true">📎</span>' +
+        '<a class="grow" href="' + esc(f.url) + '" target="_blank" rel="noopener noreferrer">' +
+          esc(f.name) + '</a>' +
+        '<button type="button" class="tool" data-unattach="' + i + '"' +
+          ' title="떼기" aria-label="' + esc(f.name) + ' 떼기">✕</button>' +
+      '</div>';
+    }).join('');
 
-    $('#attachDone').hidden = !file;
-    $('#attachEmpty').hidden = !!file;
-    if (file) {
-      $('#attachLink').textContent = file.name;
-      $('#attachLink').href = file.url;
-    }
+    var full = attached.length >= MAX_FILES;
+    $('#attachPick').hidden = full;
+    $('#attachFull').hidden = !full;
     $('#attachInput').value = '';
   }
 
-  $('#attachRemove').addEventListener('click', function () { showAttach(null); });
+  function setAttached(list) {
+    attached = (list || []).slice(0, MAX_FILES);
+    renderAttach();
+  }
+
+  $('#attachList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-unattach]');
+    if (!b) return;
+    attached.splice(Number(b.dataset.unattach), 1);
+    renderAttach();
+  });
 
   $('#attachInput').addEventListener('change', function (e) {
-    var file = e.target.files && e.target.files[0];
-    if (!file) return;
+    var picked = Array.prototype.slice.call(e.target.files || []);
+    if (!picked.length) return;
 
     var f = $('#linkForm');
-    if (file.size > MAX_FILE_MB * 1048576) {
-      showErr(f, '첨부파일은 ' + MAX_FILE_MB + 'MB 이하만 올릴 수 있습니다. (지금 ' +
-                 (file.size / 1048576).toFixed(1) + 'MB)\n' +
-                 '큰 파일은 구글 드라이브에 올리고 [링크 주소] 칸에 주소를 넣어 주세요.');
-      $('#attachInput').value = '';
+    showErr(f, '');
+
+    var room = MAX_FILES - attached.length;
+    if (picked.length > room) {
+      showErr(f, room === 0
+        ? '첨부는 ' + MAX_FILES + '개까지입니다. 먼저 하나를 떼어 주세요.'
+        : '첨부는 ' + MAX_FILES + '개까지라 ' + room + '개만 올렸습니다.');
+      picked = picked.slice(0, room);
+    }
+
+    var tooBig = picked.filter(function (x) { return x.size > MAX_FILE_MB * 1048576; });
+    if (tooBig.length) {
+      showErr(f, '"' + tooBig[0].name + '" 은 ' + (tooBig[0].size / 1048576).toFixed(1) + 'MB 로 너무 큽니다.\n' +
+                 '첨부는 하나에 ' + MAX_FILE_MB + 'MB 이하만 됩니다. 큰 파일은 드라이브에 올리고 [링크 주소] 칸을 써 주세요.');
+      picked = picked.filter(function (x) { return x.size <= MAX_FILE_MB * 1048576; });
+    }
+    if (!picked.length) { $('#attachInput').value = ''; return; }
+
+    uploadEach(picked, 0);
+  });
+
+  /** 한 개씩 차례로 올립니다. 동시에 보내면 Apps Script 가 버거워합니다. */
+  function uploadEach(list, i) {
+    if (i >= list.length) {
+      $('#attachBusy').hidden = true;
+      renderAttach();
       return;
     }
-    showErr(f, '');
+    var file = list[i];
+    var f = $('#linkForm');
     $('#attachBusy').hidden = false;
+    $('#attachBusy').textContent =
+      '올리는 중… ' + file.name + ' (' + (i + 1) + '/' + list.length + ')';
 
     var reader = new FileReader();
     reader.onload = function () {
-      // data:...;base64,XXXX 에서 뒤쪽만 보냅니다.
       var data = String(reader.result).split(',')[1] || '';
       api('uploadFile', {
         dept: f.dept.value, name: file.name,
         mimeType: file.type || 'application/octet-stream', data: data
       }).then(function (d) {
-        showAttach(d.file);
-        toast('첨부했습니다');
+        attached.push(d.file);
+        renderAttach();
+        uploadEach(list, i + 1);
       }).catch(function (err) {
-        showErr(f, err.message);
-        $('#attachInput').value = '';
-      }).then(function () {
         $('#attachBusy').hidden = true;
+        showErr(f, err.message);
+        renderAttach();
       });
     };
     reader.onerror = function () {
       $('#attachBusy').hidden = true;
-      showErr(f, '파일을 읽지 못했습니다.');
+      showErr(f, '"' + file.name + '" 을 읽지 못했습니다.');
     };
     reader.readAsDataURL(file);
-  });
+  }
 
   function syncTrackBox() {
     $('.track-target').hidden = !$('#linkForm').track.checked;
@@ -732,7 +776,7 @@
         id: f.id.value, dept: f.dept.value, title: f.title.value.trim(),
         url: f.url.value.trim(), deadline: f.deadline.value, note: f.note.value.trim(),
         desc: f.desc.value.trim(), track: f.track.checked, target: f.target.value,
-        fileId: f.fileId.value, fileName: f.fileName.value, fileUrl: f.fileUrl.value
+        files: attached
       }
     }).then(function (d) {
       state.links = d.links;
