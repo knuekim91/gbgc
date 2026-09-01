@@ -189,7 +189,10 @@ function actLogin(req) {
 
   if (hashPassword(pw, u.salt) !== u.hash) throw new Error('비밀번호가 올바르지 않습니다.');
 
-  updateUserRow(u.name, { lastLogin: now() });
+  // 최고관리자인데 시트의 role 이 teacher 로 남아 있으면 여기서 바로잡습니다.
+  var patch = { lastLogin: now() };
+  if (isSuperAdmin(u.name) && u.role !== 'admin') patch.role = 'admin';
+  updateUserRow(u.name, patch);
   u = findUser(u.name);
 
   // Apps Script 왕복 한 번이 1초 넘게 걸리므로, 화면이 바로 필요로 하는
@@ -722,7 +725,11 @@ function requireUser(req) {
 
 function requireAdmin(req) {
   var u = requireUser(req);
-  if (u.role !== 'admin') throw new Error('관리자만 사용할 수 있는 기능입니다.');
+  // 시트의 role 칸이 무엇이든 최고관리자는 통과시킵니다.
+  // 명단으로 자동 생성된 계정은 role 이 teacher 로 적히기 때문입니다.
+  if (u.role !== 'admin' && !isSuperAdmin(u.name)) {
+    throw new Error('관리자만 사용할 수 있는 기능입니다.');
+  }
   return u;
 }
 
@@ -738,7 +745,7 @@ function assertHasEmail(user) {
 }
 
 function assertCanEdit(user, dept) {
-  if (user.role === 'admin') return;
+  if (user.role === 'admin' || isSuperAdmin(user.name)) return;
   var mine = String(user.dept || '').split(',').map(function (s) { return s.trim(); });
   if (mine.indexOf(String(dept).trim()) < 0) {
     throw new Error('"' + dept + '" 부서는 수정 권한이 없습니다. (내 부서: ' + user.dept + ')');
