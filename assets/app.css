@@ -830,3 +830,7 @@ input:focus, select:focus, textarea:focus {
   .row2 { grid-template-columns: 1fr; }
   .brand-text strong { font-size: 15px; }
 }
+
+/* 창고에서 원래 부서로 되돌리는 단추 — 눈에 띄도록 초록으로 */
+.tool.back { color: #1f9d55; font-weight: 700; }
+.tool.back:hover { background: #e6f6ec; }

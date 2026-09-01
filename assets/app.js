@@ -3,6 +3,7 @@
   'use strict';
 
   var API = (window.HUB_CONFIG && window.HUB_CONFIG.apiUrl || '').trim();
+  var NL = String.fromCharCode(10);
   var LS = { token: 'gbgc.token', fav: 'gbgc.fav', theme: 'gbgc.theme', cal: 'gbgc.cal' };
 
   var state = {
@@ -147,6 +148,23 @@
   function archiveDept() {
     return state.config.archiveDept ||
       (state.depts.length ? state.depts[state.depts.length - 1] : '');
+  }
+
+  /**
+   * 창고에 있는 업무의 "원래 부서" — 제목 앞 [부서명] 에서 읽습니다.
+   * 창고 밖이거나 표시가 없으면 빈 값입니다.
+   */
+  function archivedFrom(l) {
+    if (String(l.dept || '').trim() !== archiveDept()) return '';
+    var m = /^\[([^\]]+)\]/.exec(String(l.title || '').trim());
+    var back = m ? m[1].trim() : '';
+    return state.depts.indexOf(back) >= 0 ? back : '';
+  }
+
+  /** 보낼 수 있었던 사람이면 되돌릴 수도 있어야 합니다. */
+  function canRestore(l) {
+    var back = archivedFrom(l);
+    return !!back && canEdit(back);
   }
 
   function myDepts() {
@@ -441,6 +459,10 @@
                 (first ? ' disabled' : '') + ' title="위로" aria-label="위로 옮기기">▲</button>' +
               '<button class="tool" type="button" data-move="down" data-id="' + esc(l.id) + '"' +
                 (last ? ' disabled' : '') + ' title="아래로" aria-label="아래로 옮기기">▼</button>'
+            : '') +
+          (canRestore(l)
+            ? '<button class="tool back" type="button" data-restore="' + esc(l.id) + '"' +
+                ' title="' + esc(archivedFrom(l)) + ' 로 되돌리기" aria-label="원래 부서로 되돌리기">↩</button>'
             : '') +
           (editable
             ? '<button class="tool" type="button" data-edit="' + esc(l.id) + '" aria-label="수정">✎</button>' +
@@ -776,6 +798,26 @@
       return;
     }
     if ((el = e.target.closest('[data-add]'))) { openLinkForm(null, el.dataset.add); return; }
+    if ((el = e.target.closest('[data-restore]'))) {
+      var rid = el.getAttribute('data-restore');
+      var item = state.links.filter(function (x) { return x.id === rid; })[0];
+      if (!item) return;
+      var back = archivedFrom(item);
+      var bare = String(item.title || '').replace(/^\[[^\]]+\]\s*/, '');
+      if (!confirm('"' + bare + '"' + NL + NL + back + ' 로 되돌립니다.' + NL +
+                   '제목 앞의 [' + back + '] 를 떼고 그 부서 맨 위에 놓습니다.')) return;
+
+      el.disabled = true;
+      api('restoreLink', { id: rid }).then(function (d) {
+        state.links = d.links;
+        renderAll();
+        toast(d.restored + ' 로 되돌렸습니다');
+      }).catch(function (err) {
+        alert(err.message);
+      }).then(function () { el.disabled = false; });
+      return;
+    }
+
     if ((el = e.target.closest('[data-edit]'))) {
       openLinkForm(state.links.filter(function (l) { return l.id === el.dataset.edit; })[0]);
       return;

@@ -67,6 +67,7 @@ function handle(req) {
       case 'uploadFile':     return json(actUploadFile(req));
       case 'saveLink':       return json(actSaveLink(req));
       case 'archiveLink':    return json(actArchiveLink(req));
+      case 'restoreLink':    return json(actRestoreLink(req));
       case 'deleteLink':     return json(actDeleteLink(req));
       case 'reorder':        return json(actReorder(req));
       case 'listUsers':      return json(actListUsers(req));
@@ -512,6 +513,51 @@ function actArchiveLink(req) {
     return { ok: true, links: readLinks(), archived: box };
   }
   throw new Error('보낼 업무를 찾을 수 없습니다.');
+}
+
+/**
+ * 창고에 넣은 업무를 원래 부서로 되돌립니다.
+ *
+ * 제목 앞의 [부서명] 을 읽어 어디로 돌려보낼지 정합니다.
+ * 되돌릴 수 있는 사람은 "그 부서를 맡은 선생님"입니다.
+ * 보낼 수 있었던 사람이면 되돌릴 수도 있어야 앞뒤가 맞습니다.
+ */
+function actRestoreLink(req) {
+  var me = requireUser(req);
+  assertHasEmail(me);
+
+  var id = String(req.id || '');
+  var box = archiveDept();
+  var sh = sheet(SHEET_LINKS);
+  var rows = readSheet(sh, LINK_COLS);
+
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].id !== id) continue;
+    if (String(rows[i].dept || '').trim() !== box) throw new Error('창고에 있는 업무가 아닙니다.');
+
+    var title = String(rows[i].title || '').trim();
+    var m = /^\[([^\]]+)\]\s*(.*)$/.exec(title);
+    if (!m) {
+      throw new Error('원래 부서를 알 수 없습니다. 관리자 선생님께 부탁해 주세요.');
+    }
+
+    var back = m[1].trim();
+    if (deptList().indexOf(back) < 0) {
+      throw new Error('"' + back + '" 부서가 지금은 없습니다. 관리자 선생님께 부탁해 주세요.');
+    }
+    assertCanEdit(me, back);      // 그 부서를 맡은 사람만
+
+    var record = rows[i];
+    record.dept = back;
+    record.title = m[2].trim() || title;
+    record.sort = nextSort(rows, back);
+    record.updatedBy = me.name;
+    record.updatedAt = now();
+
+    writeRow(sh, i + 2, LINK_COLS, record);
+    return { ok: true, links: readLinks(), restored: back };
+  }
+  throw new Error('되돌릴 업무를 찾을 수 없습니다.');
 }
 
 function actDeleteLink(req) {
