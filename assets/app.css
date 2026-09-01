@@ -141,11 +141,23 @@ code {
 
 /* ── 부서 칩 ───────────────────────────── */
 
+/*
+ * 부서가 15개라 한 줄에 다 들어가지 않습니다.
+ * 넓은 화면에서는 줄을 접어 한눈에 보이게 하고,
+ * 좁은 화면(휴대폰)에서는 줄이 대여섯 개로 늘어나 화면을 잡아먹으므로
+ * 원래대로 옆으로 밀어 보게 둡니다.
+ */
 .chips {
-  display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
-  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 10px;
 }
-.chips::-webkit-scrollbar { display: none; }
+
+@media (max-width: 720px) {
+  .chips {
+    flex-wrap: nowrap; overflow-x: auto;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+}
 
 .chip {
   flex: 0 0 auto; cursor: pointer;
