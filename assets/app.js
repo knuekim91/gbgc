@@ -187,6 +187,52 @@
     }));
   }
 
+  /**
+   * 다가오는 일정(D-day) — config 시트의 dday 칸에서 읽습니다.
+   *   1차 입학설명회=2026-09-11, 방학=2026-12-30
+   * 날짜는 2026-09-11 도 9.11 도 됩니다. 연도를 빼면 올해로 봅니다.
+   * 이미 지난 일정은 저절로 사라지므로 해마다 날짜만 고치시면 됩니다.
+   */
+  function parseDdays(raw) {
+    var year = new Date().getFullYear();
+    return String(raw || '').split(',').map(function (part) {
+      var at = part.lastIndexOf('=');
+      if (at < 0) return null;
+
+      var label = part.slice(0, at).trim();
+      var text = part.slice(at + 1).trim();
+      var full = /^(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})$/.exec(text);
+      var short = /^(\d{1,2})[-.\/](\d{1,2})$/.exec(text);
+
+      var date;
+      if (full) date = new Date(+full[1], +full[2] - 1, +full[3]);
+      else if (short) date = new Date(year, +short[1] - 1, +short[2]);
+      else return null;
+
+      if (!label || isNaN(date)) return null;
+      return { label: label, date: date };
+    }).filter(Boolean).sort(function (a, b) { return a.date - b.date; });
+  }
+
+  function renderDdays() {
+    var today = new Date();
+    today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    var items = parseDdays(state.config.dday).filter(function (d) {
+      return d.date >= today;            // 지난 일정은 보여 주지 않습니다
+    });
+
+    $('#ddays').innerHTML = items.map(function (d) {
+      var left = Math.round((d.date - today) / 86400000);
+      var md = (d.date.getMonth() + 1) + '.' + d.date.getDate();
+      return '<span class="dday">' +
+        '<b>' + esc(d.label) + '</b>' +
+        '<span class="dday-date">' + md + '</span>' +
+        '<span class="dday-left">' + (left === 0 ? 'D-DAY' : 'D-' + left) + '</span>' +
+      '</span>';
+    }).join('');
+  }
+
   function renderChips() {
     var counts = {};
     state.links.forEach(function (l) { counts[l.dept] = (counts[l.dept] || 0) + 1; });
@@ -430,6 +476,7 @@
         $('#notice').hidden = false;
       }
       fillDeptSelects();
+      renderDdays();
       renderAll();
 
       if (d.locked) {
