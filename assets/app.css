@@ -110,6 +110,34 @@ code {
 .brand-mark { font-size: 22px; line-height: 1; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 .brand-text strong { font-size: 16px; letter-spacing: -.2px; }
+
+/*
+ * 제목 글자 효과 — 「문해력 15」 시작 화면과 같은 방식입니다.
+ * 글자마다 색을 달리하고, 시간차를 두어 왼쪽에서 오른쪽으로 반짝임이 지나갑니다.
+ *
+ * 원본은 6초마다 글자가 사라졌다 다시 켜지지만, 이 제목은 늘 화면에 떠 있는
+ * 머리글이라 사라지지는 않게 하고 반짝임만 남겼습니다.
+ */
+#siteTitle .title-char {
+  display: inline-block;
+  animation: titleChar 6s ease-in-out infinite;
+}
+#siteTitle .title-char:nth-child(4n+1) { color: #5b6cf9; }
+#siteTitle .title-char:nth-child(4n+2) { color: #8b7bf3; }
+#siteTitle .title-char:nth-child(4n+3) { color: #d17cc8; }
+#siteTitle .title-char:nth-child(4n+4) { color: #f97bb0; }
+
+@keyframes titleChar {
+  0%, 34%, 100% { filter: brightness(1); text-shadow: none; }
+  8%  { filter: brightness(1.55); text-shadow: 0 0 10px currentColor; }
+  50% { filter: brightness(1); text-shadow: none; }
+  58% { filter: brightness(1.85); text-shadow: 0 0 14px currentColor; }
+  70% { filter: brightness(1); text-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #siteTitle .title-char { animation: none; }
+}
 .brand-text span { font-size: 12px; }
 
 .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }

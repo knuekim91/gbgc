@@ -240,6 +240,22 @@
     }).join('');
   }
 
+  /**
+   * 제목 글자를 하나씩 감싸 색과 반짝임을 입힙니다.
+   * 「문해력 15」 시작 화면에서 쓰던 방식과 같습니다.
+   * 띄어쓰기는 감싸지 않아 색이 이어지는 흐름이 끊기지 않습니다.
+   */
+  function setSiteTitle(text) {
+    var el = $('#siteTitle');
+    el.setAttribute('aria-label', text);       // 화면낭독기는 통째로 읽도록
+    el.innerHTML = String(text).split('').map(function (ch, i) {
+      if (ch === ' ') return ' ';
+      return '<span class="title-char" style="animation-delay:' +
+        (i * 0.12).toFixed(2) + 's">' + esc(ch) + '</span>';
+    }).join('');
+  }
+  setSiteTitle($('#siteTitle').textContent);   // 불러오기 전에도 보이도록
+
   function renderChips() {
     var counts = {};
     state.links.forEach(function (l) { counts[l.dept] = (counts[l.dept] || 0) + 1; });
@@ -474,7 +490,7 @@
       if (!state.me) store(LS.token, null);
 
       if (state.config.siteTitle) {
-        $('#siteTitle').textContent = state.config.siteTitle;
+        setSiteTitle(state.config.siteTitle);
         document.title = state.config.siteTitle;
       }
       if (state.config.year) $('#siteYear').textContent = state.config.year;
