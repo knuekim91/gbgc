@@ -1133,6 +1133,17 @@
   bootstrap();
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    // 이미 서비스 워커가 붙어 있던 화면이라면, 새 버전이 자리를 넘겨받는 순간
+    // 한 번만 새로고침해 고쳐진 화면을 바로 보여 줍니다.
+    // (처음 방문은 controller 가 없으므로 새로고침하지 않습니다)
+    if (navigator.serviceWorker.controller) {
+      var reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (reloaded) return;
+        reloaded = true;
+        location.reload();
+      });
+    }
     navigator.serviceWorker.register('sw.js').catch(function () {});
   }
 })();
