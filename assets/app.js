@@ -409,7 +409,7 @@
           ' aria-expanded="' + open + '" aria-controls="' + pid + '">' +
           '<span class="item-icon" title="' + esc(TYPE_LABEL[type] || '링크') + '">' + (TYPE_ICON[type] || '🔗') + '</span>' +
           '<span class="item-main">' +
-            '<span class="item-title">' + esc(l.title) + '</span>' +
+            '<span class="item-title" title="' + esc(l.title) + '">' + esc(l.title) + '</span>' +
             '<span class="item-meta">' +
               (showDept ? '<span class="tag dept" style="--dept:' + deptColor(l.dept) + '">' + esc(l.dept) + '</span>' : '') +
               deadlineTag(l.deadline) +

@@ -316,6 +316,7 @@ code {
 .item.open { background: var(--panel-2); }
 
 .item-head {
+  position: relative;
   display: flex; align-items: flex-start; gap: 4px;
   padding: 0 9px 0 4px; border-radius: 9px;
   transition: background .12s;
@@ -331,10 +332,18 @@ code {
 .item-icon { font-size: 15px; line-height: 1.5; flex-shrink: 0; width: 18px; text-align: center; }
 
 .item-main { flex: 1; min-width: 0; }
+/*
+ * 제목은 한 줄로 두고 넘치면 … 로 줄입니다.
+ * 카드가 들쭉날쭉해지지 않고, 전체 제목은 펼치면 그대로 나오며
+ * 마우스를 올리면 풍선말로도 보입니다.
+ */
 .item-title {
   display: block; font-weight: 500; font-size: 13.8px;
-  line-height: 1.5; overflow-wrap: anywhere;
+  line-height: 1.5;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* 펼친 항목은 굳이 줄일 이유가 없으니 온전히 보여 줍니다. */
+.item.open .item-title { white-space: normal; overflow-wrap: anywhere; }
 .item-toggle:hover .item-title { color: var(--accent); }
 
 .caret {
@@ -390,9 +399,29 @@ code {
 .prog.done .bar i { background: #1a8a4a; }
 .prog.err { color: var(--ink-3); font-weight: 400; }
 
-.item-tools { display: flex; gap: 2px; flex-shrink: 0; align-self: center; opacity: 0; transition: opacity .12s; }
-.item-head:hover .item-tools, .item:focus-within .item-tools, .item.open .item-tools { opacity: 1; }
-@media (hover: none) { .item-tools { opacity: 1; } }
+/*
+ * 도구 버튼은 평소에 자리를 차지하지 않게 띄워 둡니다.
+ * 예전에는 안 보여도 폭을 차지해 제목이 두 줄로 접히곤 했습니다.
+ * 왼쪽 가장자리에 옅은 그러데이션을 두어 제목 끝과 자연스럽게 겹칩니다.
+ */
+.item-tools {
+  position: absolute; right: 8px; top: 8px;
+  display: flex; gap: 2px; align-items: center;
+  padding-left: 24px;
+  background: linear-gradient(90deg, transparent, var(--panel-2) 22%);
+  opacity: 0; pointer-events: none; transition: opacity .12s;
+}
+.item-head:hover .item-tools,
+.item:focus-within .item-tools,
+.item.open .item-tools { opacity: 1; pointer-events: auto; }
+
+/* 손가락으로 쓰는 화면에서는 늘 보이므로 제목과 겹치지 않게 제자리에 둡니다. */
+@media (hover: none) {
+  .item-tools {
+    position: static; opacity: 1; pointer-events: auto;
+    padding-left: 0; background: none; flex-shrink: 0; align-self: center;
+  }
+}
 
 .tool {
   border: 0; background: none; cursor: pointer; color: var(--ink-3);
