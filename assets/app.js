@@ -962,6 +962,8 @@
         ' aria-pressed="' + on + '" style="--dept:' + deptColor(d) + '">' + esc(d) + '</button>';
     }).join('');
 
+    $('#pickAll').textContent = mine.length === state.depts.length ? '모두 해제' : '모두 선택';
+
     $('#myDeptsNote').textContent = state.me && state.me.role === 'admin'
       ? '관리자는 고르지 않아도 모든 부서를 편집할 수 있습니다.'
       : (mine.length ? '고른 부서: ' + mine.join(', ') : '아직 고른 부서가 없습니다.');
@@ -974,20 +976,13 @@
       .map(function (s) { return s.trim(); }).filter(Boolean);
   }
 
-  $('#myDepts').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-dept]');
-    if (!b) return;
-
-    var mine = myOwnDepts();
-    var at = mine.indexOf(b.dataset.dept);
-    if (at < 0) mine.push(b.dataset.dept); else mine.splice(at, 1);
-
-    // 응답을 기다리지 않고 먼저 칠해 둡니다. 실패하면 되돌립니다.
+  /** 고른 부서를 저장합니다. 응답을 기다리지 않고 먼저 칠하고, 실패하면 되돌립니다. */
+  function saveDepts(list) {
     var before = state.me.dept;
-    state.me.dept = mine.join(', ');
+    state.me.dept = list.join(', ');
     renderMyDepts();
 
-    api('saveMyDepts', { depts: mine }).then(function (d) {
+    api('saveMyDepts', { depts: list }).then(function (d) {
       state.me = d.me;
       renderMyDepts();
       renderAll();
@@ -996,6 +991,21 @@
       renderMyDepts();
       toast(err.message, true);
     });
+  }
+
+  $('#myDepts').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-dept]');
+    if (!b) return;
+
+    var mine = myOwnDepts();
+    var at = mine.indexOf(b.dataset.dept);
+    if (at < 0) mine.push(b.dataset.dept); else mine.splice(at, 1);
+    saveDepts(mine);
+  });
+
+  // 한 번에 전부 고르거나 전부 뺍니다.
+  $('#pickAll').addEventListener('click', function () {
+    saveDepts(myOwnDepts().length === state.depts.length ? [] : state.depts.slice());
   });
 
   $('#acctClose').addEventListener('click', function () { $('#dlgAccount').close(); });
