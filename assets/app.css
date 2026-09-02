@@ -127,6 +127,29 @@ code {
 #siteTitle .title-char:nth-child(4n+3) { color: #d17cc8; }
 #siteTitle .title-char:nth-child(4n+4) { color: #f97bb0; }
 
+/* 공지도 제목과 같은 물결 효과를 씁니다. 다만 공지는 호박색 띠 위에 놓이므로
+   제목의 보라·분홍을 그대로 쓰면 묻힙니다. 그 바탕에서 읽히는 색으로 짰습니다. */
+.notice .title-char {
+  display: inline-block;
+  animation: titleChar 6s ease-in-out infinite;
+  font-weight: 600;
+}
+.notice .title-char:nth-child(4n+1) { color: #c2410c; }
+.notice .title-char:nth-child(4n+2) { color: #a16207; }
+.notice .title-char:nth-child(4n+3) { color: #b91c5c; }
+.notice .title-char:nth-child(4n+4) { color: #7c3aed; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .notice .title-char:nth-child(4n+1) { color: #fb923c; }
+  :root:not([data-theme="light"]) .notice .title-char:nth-child(4n+2) { color: #fcd34d; }
+  :root:not([data-theme="light"]) .notice .title-char:nth-child(4n+3) { color: #f9a8d4; }
+  :root:not([data-theme="light"]) .notice .title-char:nth-child(4n+4) { color: #c4b5fd; }
+}
+:root[data-theme="dark"] .notice .title-char:nth-child(4n+1) { color: #fb923c; }
+:root[data-theme="dark"] .notice .title-char:nth-child(4n+2) { color: #fcd34d; }
+:root[data-theme="dark"] .notice .title-char:nth-child(4n+3) { color: #f9a8d4; }
+:root[data-theme="dark"] .notice .title-char:nth-child(4n+4) { color: #c4b5fd; }
+
 @keyframes titleChar {
   0%, 34%, 100% { filter: brightness(1); text-shadow: none; }
   8%  { filter: brightness(1.55); text-shadow: 0 0 10px currentColor; }
@@ -136,7 +159,7 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #siteTitle .title-char { animation: none; }
+  #siteTitle .title-char, .notice .title-char { animation: none; }
 }
 .brand-text span { font-size: 12px; }
 

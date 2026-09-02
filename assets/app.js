@@ -293,14 +293,34 @@
    * 「문해력 15」 시작 화면에서 쓰던 방식과 같습니다.
    * 띄어쓰기는 감싸지 않아 색이 이어지는 흐름이 끊기지 않습니다.
    */
-  function setSiteTitle(text) {
-    var el = $('#siteTitle');
+  /**
+   * 글자를 하나씩 떼어 물결처럼 반짝이게 합니다.
+   * 제목과 공지가 같은 효과를 씁니다.
+   *
+   * step 은 글자 사이의 시간차입니다. 글이 길수록 좁혀야 물결이
+   * 한 바퀴 안에 끝까지 닿습니다 (애니메이션 한 주기는 6초).
+   */
+  function waveText(el, text, step) {
+    text = String(text);
     el.setAttribute('aria-label', text);       // 화면낭독기는 통째로 읽도록
-    el.innerHTML = String(text).split('').map(function (ch, i) {
+    el.innerHTML = text.split('').map(function (ch, i) {
       if (ch === ' ') return ' ';
       return '<span class="title-char" style="animation-delay:' +
-        (i * 0.12).toFixed(2) + 's">' + esc(ch) + '</span>';
+        (i * step).toFixed(2) + 's">' + esc(ch) + '</span>';
     }).join('');
+  }
+
+  function setSiteTitle(text) {
+    waveText($('#siteTitle'), text, 0.12);
+  }
+
+  function setNotice(text) {
+    var el = $('#notice');
+    text = String(text || '').trim();
+    el.hidden = !text;
+    if (!text) { el.innerHTML = ''; return; }
+    // 공지는 제목보다 기니 시간차를 좁혀 6초 안에 끝까지 훑고 지나가게 합니다.
+    waveText(el, text, Math.min(0.12, 5 / Math.max(text.length, 1)));
   }
   setSiteTitle($('#siteTitle').textContent);   // 불러오기 전에도 보이도록
 
@@ -652,10 +672,7 @@
         document.title = state.config.siteTitle;
       }
       if (state.config.year) $('#siteYear').textContent = state.config.year;
-      if (state.config.notice) {
-        $('#notice').textContent = state.config.notice;
-        $('#notice').hidden = false;
-      }
+      setNotice(state.config.notice);
       fillDeptSelects();
       renderDdays();
       renderAll();
