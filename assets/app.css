@@ -187,9 +187,18 @@ code {
   .ddays { order: 3; width: 100%; flex: none; justify-content: flex-start; padding-bottom: 4px; }
 }
 
-.searchrow { padding: 6px 0 10px; }
+/* 검색창은 여덟 글자쯤 들어가면 넉넉합니다. 남는 자리는 공지가 씁니다.
+   좁은 화면에서는 공지가 아랫줄로 내려갑니다. */
+.searchrow {
+  padding: 6px 0 10px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+/* 공지는 글자를 하나씩 떼어 놓은 상태라 flex 로 감싸면 안 됩니다.
+   글자마다 칸이 되어 띄어쓰기가 사라지고 줄바꿈도 못 합니다. */
+.searchrow #notice { margin: 0; flex: 1 1 260px; min-width: 0; }
 
 .search {
+  flex: 0 0 auto; width: 190px;
   display: flex; align-items: center; gap: 8px;
   background: var(--panel-2);
   border: 1px solid var(--line);
