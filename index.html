@@ -273,6 +273,28 @@
       </p>
     </section>
 
+    <section id="noticePane" class="panel" hidden>
+      <h3>맨 위 띠 공지</h3>
+      <p class="hint">
+        전 교직원에게 알릴 일을 적어 주세요. 화면 맨 위 검색창 옆에 나타납니다.
+        <b>선생님 누구나</b> 올리고 지울 수 있습니다.
+      </p>
+
+      <form id="noticeForm">
+        <textarea name="notice" rows="2" maxlength="120"
+                  placeholder="예) 9월 5일(금) 전체 교직원 연수가 3시로 앞당겨졌습니다."></textarea>
+        <p class="hint noticemeta">
+          <span id="noticeCount">0 / 120자</span>
+          <span id="noticeBy"></span>
+        </p>
+        <div class="row-end">
+          <button type="button" class="btn" id="noticeClear">지우기</button>
+          <button type="submit" class="btn btn-primary">띠에 올리기</button>
+        </div>
+        <p class="err" data-err hidden></p>
+      </form>
+    </section>
+
     <menu>
       <button class="btn btn-ghost" id="logoutBtn" type="button">로그아웃</button>
       <button class="btn" id="acctClose" type="button">닫기</button>

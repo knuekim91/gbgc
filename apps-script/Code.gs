@@ -22,6 +22,7 @@ var HASH_ROUNDS = 600;
 // 첨부파일은 내 드라이브 / gbgc / <부서> 아래에 쌓입니다.
 // 파일이 Apps Script 를 거쳐 가므로 크기를 키우면 업로드가 눈에 띄게 느려집니다.
 // 큰 파일은 드라이브에 직접 올리고 '링크 주소' 칸을 쓰시는 편이 낫습니다.
+var NOTICE_MAX = 120;          // 띠 공지 글자수 — 한두 줄이면 충분합니다
 var DRIVE_FOLDER = 'gbgc';
 var MAX_FILE_MB = 5;
 var MAX_FILES = 3;        // 업무 하나에 붙일 수 있는 첨부 개수
@@ -75,6 +76,7 @@ function handle(req) {
       case 'deleteUser':     return json(actDeleteUser(req));
       case 'resetPassword':  return json(actResetPassword(req));
       case 'saveConfig':     return json(actSaveConfig(req));
+      case 'saveNotice':     return json(actSaveNotice(req));
       default:               return json({ ok: false, error: '알 수 없는 요청: ' + action });
     }
   } catch (err) {
@@ -692,16 +694,43 @@ function actResetPassword(req) {
   return { ok: true, password: DEFAULT_PASSWORD };
 }
 
-function actSaveConfig(req) {
-  requireAdmin(req);
+function patchConfig(patch) {
   var sh = sheet(SHEET_CONFIG);
-  var patch = req.config || {};
   var rows = sh.getDataRange().getValues();
   Object.keys(patch).forEach(function (k) {
     for (var i = 1; i < rows.length; i++) {
       if (String(rows[i][0]) === k) { sh.getRange(i + 1, 2).setValue(patch[k]); return; }
     }
     sh.appendRow([k, patch[k]]);
+  });
+}
+
+function actSaveConfig(req) {
+  requireAdmin(req);
+  patchConfig(req.config || {});
+  return { ok: true, config: readConfig() };
+}
+
+/**
+ * 맨 위 띠 공지를 고칩니다.
+ *
+ * 관리자만이 아니라 선생님 누구나 올릴 수 있습니다. 대신 누가 언제 올렸는지
+ * 함께 남겨, 화면에서 볼 수 있게 합니다. 지우는 것도 누구나 할 수 있습니다.
+ */
+function actSaveNotice(req) {
+  var me = requireUser(req);
+  assertHasEmail(me);
+
+  // 줄바꿈·연속 공백은 한 칸으로 눕힙니다. 띠는 한 줄짜리 자리입니다.
+  var text = String(req.notice || '').replace(/\s+/g, ' ').trim();
+  if (text.length > NOTICE_MAX) {
+    throw new Error('띠 공지는 ' + NOTICE_MAX + '자까지 쓸 수 있습니다. 지금 ' + text.length + '자입니다.');
+  }
+
+  patchConfig({
+    notice:   text,
+    noticeBy: text ? me.name : '',
+    noticeAt: text ? now() : ''
   });
   return { ok: true, config: readConfig() };
 }

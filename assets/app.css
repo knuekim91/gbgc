@@ -922,3 +922,17 @@ input:focus, select:focus, textarea:focus {
   color: #fff; font-weight: 600;
 }
 .chip.dept[aria-pressed="true"]::before { background: #fff; opacity: .9; }
+
+/* 띠 공지 쓰는 칸 */
+#noticeForm textarea {
+  width: 100%; resize: vertical; font: inherit;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: var(--panel-2); color: var(--ink);
+  padding: 9px 11px; outline: none;
+}
+#noticeForm textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.noticemeta { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0 9px; }
+.row-end { display: flex; justify-content: flex-end; gap: 7px; }

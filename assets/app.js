@@ -1252,6 +1252,11 @@
     }
     $('#adminPane').hidden = !isAdmin;
     if (isAdmin) loadUsers();
+
+    // 띠 공지는 관리자만이 아니라 선생님 누구나 올릴 수 있습니다.
+    $('#noticePane').hidden = false;
+    fillNoticePane();
+
     $('#dlgAccount').showModal();
   }
 
@@ -1342,6 +1347,51 @@
       renderDdays();
     });
   }
+
+  /* ── 맨 위 띠 공지 ─────────────────────── */
+
+  var NOTICE_MAX = 120;
+
+  function noticeCount() {
+    var n = $('#noticeForm').notice.value.trim().length;
+    $('#noticeCount').textContent = n + ' / ' + NOTICE_MAX + '자';
+  }
+
+  function fillNoticePane() {
+    var f = $('#noticeForm');
+    showErr($('#noticePane'), '');
+    f.notice.value = state.config.notice || '';
+    noticeCount();
+
+    // 누구나 고칠 수 있으니, 지금 걸린 글을 누가 언제 올렸는지 밝혀 둡니다.
+    var by = String(state.config.noticeBy || '').trim();
+    var at = String(state.config.noticeAt || '').trim().slice(0, 10);
+    $('#noticeBy').textContent = by ? by + ' 선생님이 올림' + (at ? ' · ' + at : '') : '';
+  }
+
+  $('#noticeForm').addEventListener('input', noticeCount);
+
+  function saveNotice(text) {
+    var pane = $('#noticePane');
+    showErr(pane, '');
+    return api('saveNotice', { notice: text }).then(function (d) {
+      state.config = d.config;
+      setNotice(state.config.notice);
+      fillNoticePane();
+      toast(text ? '띠에 올렸습니다' : '띠 공지를 지웠습니다');
+    }).catch(function (err) { showErr(pane, err.message); });
+  }
+
+  $('#noticeForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    saveNotice(e.target.notice.value);
+  });
+
+  $('#noticeClear').addEventListener('click', function () {
+    if (!String(state.config.notice || '').trim()) { $('#noticeForm').notice.value = ''; noticeCount(); return; }
+    if (!confirm('맨 위 띠 공지를 지웁니다.' + NL + '모든 선생님 화면에서 사라집니다.')) return;
+    saveNotice('');
+  });
 
   $('#ddayForm').addEventListener('submit', function (e) {
     e.preventDefault();
