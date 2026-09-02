@@ -84,6 +84,10 @@
     return 'hsl(' + hue + ' 62% 48%)';
   }
 
+  // 구글시트 공유 설정 안내 — 예전에는 화면 맨 위 띠에 늘 떠 있었지만,
+  // 정작 필요한 곳은 링크를 넣는 순간입니다. 그래서 링크 칸 밑으로 옮겼습니다.
+  var SHARE_HINT = '구글시트는 [공유 > 링크가 있는 모든 사용자 > 편집자]로 설정한 뒤 등록해 주세요.';
+
   var TYPE_ICON = {
     sheet: '📊', form: '📝', doc: '📄', slide: '📽️',
     drive: '📁', notion: '🗂️', link: '🔗', task: '📌'
@@ -923,7 +927,7 @@
 
   function openLinkForm(link, dept) {
     var f = $('#linkForm');
-    f.reset(); showErr(f, ''); $('#urlHint').textContent = '';
+    f.reset(); showErr(f, ''); $('#urlHint').textContent = SHARE_HINT;
 
     var allowed = myDepts();
     $('#linkForm select[name=dept]').innerHTML = allowed.map(function (d) {
@@ -1066,11 +1070,13 @@
   function hintFor(url) {
     var hint = $('#urlHint');
     if (!String(url || '').trim()) {
-      hint.textContent = '📌 링크 없이 업무만 등록됩니다';
+      hint.textContent = SHARE_HINT + NL + '📌 비워 두면 링크 없이 업무만 등록됩니다';
       return;
     }
     var t = detectType(url);
-    hint.textContent = (TYPE_ICON[t] || '🔗') + ' ' + (TYPE_LABEL[t] || '웹 페이지') + ' 링크로 등록됩니다';
+    var line = (TYPE_ICON[t] || '🔗') + ' ' + (TYPE_LABEL[t] || '웹 페이지') + ' 링크로 등록됩니다';
+    // 구글시트일 때는 공유 설정을 한 번 더 짚어 줍니다. 여기서 가장 많이 막힙니다.
+    hint.textContent = t === 'sheet' ? line + NL + SHARE_HINT : line;
   }
 
   $('#linkForm').addEventListener('submit', function (e) {

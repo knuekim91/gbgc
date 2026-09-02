@@ -265,7 +265,9 @@ function installHub() {
     cfg.getRange(2, 1, 6, 2).setValues([
       ['siteTitle', '경북여상 교무실 업무 허브'],
       ['year', '2026학년도'],
-      ['notice', '구글시트는 [공유 > 링크가 있는 모든 사용자 > 편집자]로 설정한 뒤 등록해 주세요.'],
+      // notice 는 비워 둡니다. 구글시트 공유 설정 안내는 이제 업무 추가 창의
+      // 링크 칸 밑에 나옵니다. 이 줄은 학교 전체에 알릴 일이 있을 때 쓰세요.
+      ['notice', ''],
       ['depts', DEPTS.join(', ')],
       ['siteUrl', 'https://knuekim91.github.io/gbgc/'],
       ['requireLogin', '']
