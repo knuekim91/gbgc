@@ -38,6 +38,19 @@
 
   /* ── API ───────────────────────── */
 
+  /**
+   * 단추를 눌린 상태로 잠그고 글자를 바꿉니다. 되돌리는 함수를 돌려줍니다.
+   *
+   * Apps Script 왕복이 3~7초씩 걸립니다. 그동안 아무 반응이 없으면
+   * 선생님들은 멈춘 줄 아시고 다시 누르십니다.
+   */
+  function busy(btn, label) {
+    var was = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = label;
+    return function () { btn.disabled = false; btn.textContent = was; };
+  }
+
   function api(action, payload) {
     if (!API) return Promise.reject(new Error('SETUP'));
     var body = Object.assign({ action: action, token: store(LS.token) || '' }, payload || {});
@@ -1208,11 +1221,14 @@
     e.preventDefault();
     var f = e.target;
     showErr(f, '');
+    var done = busy(f.querySelector('button[type=submit]'), '저장 중…');
     api('saveMyEmail', { email: f.email.value.trim() }).then(function (d) {
       state.me = d.me;
       renderAll();
       toast(d.me.email ? '이메일을 저장했습니다. 이제 업무를 추가하실 수 있습니다' : '이메일을 지웠습니다');
-    }).catch(function (err) { showErr(f, err.message); });
+    }).catch(function (err) {
+      showErr(f, err.message);
+    }).then(done);
   });
 
   $$('[data-close]').forEach(function (b) {
@@ -1371,26 +1387,29 @@
 
   $('#noticeForm').addEventListener('input', noticeCount);
 
-  function saveNotice(text) {
+  function saveNotice(text, btn) {
     var pane = $('#noticePane');
     showErr(pane, '');
+    var done = busy(btn, text ? '올리는 중…' : '지우는 중…');
     return api('saveNotice', { notice: text }).then(function (d) {
       state.config = d.config;
       setNotice(state.config.notice);
       fillNoticePane();
       toast(text ? '띠에 올렸습니다' : '띠 공지를 지웠습니다');
-    }).catch(function (err) { showErr(pane, err.message); });
+    }).catch(function (err) {
+      showErr(pane, err.message);
+    }).then(done);
   }
 
   $('#noticeForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    saveNotice(e.target.notice.value);
+    saveNotice(e.target.notice.value, e.target.querySelector('button[type=submit]'));
   });
 
   $('#noticeClear').addEventListener('click', function () {
     if (!String(state.config.notice || '').trim()) { $('#noticeForm').notice.value = ''; noticeCount(); return; }
     if (!confirm('맨 위 띠 공지를 지웁니다.' + NL + '모든 선생님 화면에서 사라집니다.')) return;
-    saveNotice('');
+    saveNotice('', this);
   });
 
   $('#ddayForm').addEventListener('submit', function (e) {
@@ -1409,11 +1428,14 @@
     });
     items.sort(function (a, b) { return a.date - b.date; });
 
+    var done = busy(f.querySelector('button[type=submit]'), '추가 중…');
     saveDdays(items).then(function () {
       f.reset();
       f.label.focus();
       toast('일정을 추가했습니다');
-    }).catch(function (err) { showErr($('#ddaySection'), err.message); });
+    }).catch(function (err) {
+      showErr($('#ddaySection'), err.message);
+    }).then(done);
   });
 
   $('#ddayList').addEventListener('click', function (e) {
