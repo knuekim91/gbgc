@@ -993,15 +993,32 @@ function archiveDept() {
   return set || ('창고(' + new Date().getFullYear() + ')');
 }
 
+/**
+ * 출석부모음 — 부서마다 흩어지는 출석부를 한 카드에 모으는 자리입니다.
+ * 부서가 아니라 모음이므로 창고 바로 앞에 붙여 둡니다.
+ * config 의 depts 에 넣어야 생깁니다. 빼면 없어집니다.
+ */
+function rollDept() {
+  return String(readConfig().rollDept || '').trim() || '출석부모음';
+}
+
 function deptList() {
   var list = String(readConfig().depts || '')
     .split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 
-  // 창고는 늘 맨 뒤에 둡니다. 화면에서도 마지막 카드로 나옵니다.
+  // 모음 자리는 늘 맨 뒤에 붙입니다. 부서를 새로 넣어도 순서가 흐트러지지
+  // 않습니다. 출석부모음 → 창고 순입니다.
+  var roll = rollDept();
   var box = archiveDept();
-  var at = list.indexOf(box);
-  if (at >= 0) list.splice(at, 1);
-  list.push(box);
+  var hasRoll = list.indexOf(roll) >= 0;
+
+  [roll, box].forEach(function (name) {
+    var at = list.indexOf(name);
+    if (at >= 0) list.splice(at, 1);
+  });
+
+  if (hasRoll) list.push(roll);   // 출석부모음은 config 에 있을 때만
+  list.push(box);                 // 창고는 늘
   return list;
 }
 

@@ -85,10 +85,16 @@
     '교장': 240, '교감': 165,
     '교무부': 25, '연구부': 35, '학생부': 45, '진로창체부': 330, '기본학력방과후부': 270,
     '복지상담부': 300, '특성화교육과정부': 210, '산학협력부': 195, '전문교육부': 145,
-    '인성학부모부': 15, '1학년': 55, '2학년': 85, '3학년': 110
+    '인성학부모부': 15, '1학년': 55, '2학년': 85, '3학년': 110,
+    // 출석부모음은 이름을 흘려 색을 뽑으면 hue 59 — 학생부·1학년과 거의
+    // 같은 색이 됩니다. 캘린더가 색으로 부서를 알리므로 따로 잡아 둡니다.
+    '출석부모음': 180
   };
 
   function deptColor(name) {
+    // 창고는 끝난 업무를 담는 곳이라 눈에 덜 띄게 회색으로 둡니다.
+    if (name === archiveDept()) return 'hsl(215 12% 52%)';
+
     var hue = DEPT_HUE[name];
     if (hue === undefined) {
       hue = 0;
@@ -654,6 +660,13 @@
     }
   });
 
+  /**
+   * 보이는 목록이 달라지는 곳에서 부릅니다.
+   * 캘린더도 보드와 같은 목록(visibleLinks)을 쓰므로 늘 함께 그려야 합니다.
+   * 따로 부르면 필터를 바꿔도 캘린더만 옛 목록으로 남습니다.
+   */
+  function renderView() { renderCalendar(); renderBoard(); }
+
   function renderAll() { renderChips(); renderCalendar(); renderBoard(); renderAuth(); }
 
   /* ── 불러오기 ───────────────────────── */
@@ -722,7 +735,7 @@
     var raw = decodeURIComponent(location.hash.replace(/^#/, '')).trim();
     if (!raw) return;
     var known = ['all', 'fav', 'due', 'mine'].concat(state.depts);
-    if (known.indexOf(raw) >= 0) { state.filter = raw; renderChips(); renderBoard(); }
+    if (known.indexOf(raw) >= 0) { state.filter = raw; renderChips(); renderView(); }
   }
   window.addEventListener('hashchange', applyHash);
 
@@ -781,10 +794,10 @@
   $('#q').addEventListener('input', function (e) {
     state.q = e.target.value;
     $('#qClear').hidden = !state.q;
-    renderBoard();
+    renderView();
   });
   $('#qClear').addEventListener('click', function () {
-    $('#q').value = ''; state.q = ''; this.hidden = true; renderBoard(); $('#q').focus();
+    $('#q').value = ''; state.q = ''; this.hidden = true; renderView(); $('#q').focus();
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
@@ -800,7 +813,7 @@
     // 주소창에도 반영해서 지금 보는 화면을 그대로 공유할 수 있게 합니다.
     history.replaceState(null, '',
       location.pathname + (state.filter === 'all' ? '' : '#' + encodeURIComponent(state.filter)));
-    renderChips(); renderBoard();
+    renderChips(); renderView();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
@@ -829,7 +842,7 @@
       var on = toggleFav(el.dataset.star);
       el.classList.toggle('on', on);
       el.textContent = on ? '★' : '☆';
-      if (state.filter === 'fav') renderBoard();
+      if (state.filter === 'fav') renderView();
       return;
     }
     if ((el = e.target.closest('[data-copy]'))) {
