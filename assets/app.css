@@ -936,3 +936,14 @@ input:focus, select:focus, textarea:focus {
 }
 .noticemeta { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0 9px; }
 .row-end { display: flex; justify-content: flex-end; gap: 7px; }
+
+/* 로그인 창의 '자동 로그인' 줄 — 다른 칸과 달리 체크상자와 글을 가로로 */
+/* .dlg label 이 flex-direction:column 을 걸어 칸을 세로로 쌓습니다.
+   자동 로그인 줄은 체크상자+글을 가로로 놓아야 하므로 그보다 센 선택자로 덮습니다. */
+.dlg label.remember {
+  flex-direction: row; align-items: center; justify-content: flex-start;
+  gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500; margin-top: 2px;
+}
+.remember > input { width: 16px; height: 16px; margin: 0; flex: 0 0 auto; }
+.remember > span { user-select: none; }
+.remember-hint { margin: 3px 0 0 24px; }

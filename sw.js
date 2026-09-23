@@ -2,7 +2,7 @@
  * 링크 데이터(Apps Script 응답)는 항상 새로 받아오므로 캐시하지 않습니다. */
 
 // 화면 파일을 고칠 때마다 이 번호를 올려 주세요. 기존 사용자의 캐시가 갱신됩니다.
-var CACHE = 'gbgc-hub-v3';
+var CACHE = 'gbgc-hub-v4';
 var SHELL = [
   './',
   './index.html',

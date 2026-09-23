@@ -16,7 +16,8 @@ var SHEET_CONFIG   = 'config';
 var SHEET_TEACHERS = 'teachers';   // 로그인 허용 명단 (교직원 비상연락망에서 가져옴)
 
 var DEFAULT_PASSWORD = '2026';
-var TOKEN_HOURS = 12;
+var TOKEN_HOURS = 12;             // 평소 로그인 유지 시간
+var TOKEN_HOURS_REMEMBER = 24 * 180;   // '이 기기 기억' 체크 시 — 약 6개월
 var HASH_ROUNDS = 600;
 
 // 첨부파일은 내 드라이브 / gbgc / <부서> 아래에 쌓입니다.
@@ -203,7 +204,7 @@ function actLogin(req) {
   // 목록·부서·설정을 로그인 응답에 함께 실어 보냅니다. (요청 2번 → 1번)
   return {
     ok: true,
-    token: makeToken(u.name),
+    token: makeToken(u.name, req.remember ? TOKEN_HOURS_REMEMBER : TOKEN_HOURS),
     me: publicUser(u),
     config: readConfig(),
     links: readLinks(),
@@ -887,8 +888,9 @@ function secret() {
 
 // 한글 이름이 들어가므로 반드시 UTF-8 을 지정해야 합니다.
 // 지정하지 않으면 Apps Script 가 한글을 '???' 로 바꿔 버려 토큰이 무용지물이 됩니다.
-function makeToken(name) {
-  var body = name + '|' + (Date.now() + TOKEN_HOURS * 3600 * 1000);
+function makeToken(name, hours) {
+  var life = (Number(hours) || TOKEN_HOURS) * 3600 * 1000;
+  var body = name + '|' + (Date.now() + life);
   return Utilities.base64EncodeWebSafe(body, Utilities.Charset.UTF_8) + '.' + sign(body);
 }
 

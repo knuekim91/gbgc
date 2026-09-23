@@ -4,7 +4,8 @@
 
   var API = (window.HUB_CONFIG && window.HUB_CONFIG.apiUrl || '').trim();
   var NL = String.fromCharCode(10);
-  var LS = { token: 'gbgc.token', fav: 'gbgc.fav', theme: 'gbgc.theme', cal: 'gbgc.cal' };
+  var LS = { token: 'gbgc.token', fav: 'gbgc.fav', theme: 'gbgc.theme', cal: 'gbgc.cal',
+             name: 'gbgc.name', remember: 'gbgc.remember' };
 
   var state = {
     links: [], depts: [], config: {}, me: null, users: [],
@@ -921,8 +922,12 @@
     ok.textContent = '확인 중…';
 
     // 로그인 응답에 목록까지 함께 오므로 bootstrap 을 또 부르지 않습니다.
-    api('login', { name: f.name.value, password: f.password.value }).then(function (d) {
+    var remember = f.remember.checked;
+    api('login', { name: f.name.value, password: f.password.value, remember: remember }).then(function (d) {
       store(LS.token, d.token);
+      // 이름은 항상 기억합니다. 자동 로그인 여부는 다음에 창을 열 때 그대로 보여 줍니다.
+      store(LS.name, String(d.me && d.me.name || f.name.value).trim());
+      store(LS.remember, remember ? '1' : null);
       applyBoot(d);
     }).then(function () {
       if (!state.me) {
@@ -1142,9 +1147,11 @@
     }).catch(function (err) { showErr(f, err.message); });
   });
 
-  /** 로그인 창을 열면 아직 안 채운 칸에 커서를 둡니다. */
+  /** 로그인 창을 열면 지난번 이름과 자동 로그인 여부를 채우고, 빈 칸에 커서를 둡니다. */
   function focusLogin() {
     var f = $('#loginForm');
+    if (!f.name.value.trim()) f.name.value = store(LS.name) || '';
+    f.remember.checked = store(LS.remember) === '1';
     setTimeout(function () {
       (f.name.value.trim() ? f.password : f.name).focus();
     }, 50);
