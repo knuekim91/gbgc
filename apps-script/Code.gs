@@ -30,7 +30,7 @@ var MAX_FILES = 3;        // 업무 하나에 붙일 수 있는 첨부 개수
 
 // track / target / email 은 뒤에 덧붙였습니다. 기존 시트를 쓰던 중이라면
 // 메뉴 [경북여상 허브 > 시트 열 최신화] 를 한 번 실행해 주세요.
-var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc','fileId','fileName','fileUrl','files'];
+var LINK_COLS = ['id','dept','title','url','type','note','deadline','sort','active','updatedBy','updatedAt','track','target','desc','fileId','fileName','fileUrl','files','start'];
 var USER_COLS = ['name','dept','role','salt','hash','mustChange','updatedAt','email','lastLogin'];
 var TEACHER_COLS = ['name','dept','title','group'];
 
@@ -432,6 +432,13 @@ function actSaveLink(req) {
   var title = String(link.title || '').trim();
   var url   = String(link.url || '').trim();
   if (!title) throw new Error('제목을 입력해 주세요.');
+
+  // 시작일은 선택입니다. 둘 다 넣으면 그 사이를 쭉 이어진 일정으로 봅니다.
+  var startD = String(link.start || '').trim();
+  var endD   = String(link.deadline || '').trim();
+  if (startD && endD && startD > endD) {
+    throw new Error('시작일이 마감일보다 늦습니다. 날짜를 확인해 주세요.');
+  }
   // 링크 주소는 선택입니다. 적었다면 형식만 확인합니다.
   if (url && !/^https?:\/\//i.test(url)) {
     throw new Error('링크는 http:// 또는 https:// 로 시작해야 합니다.');
@@ -448,7 +455,8 @@ function actSaveLink(req) {
     url: url,
     type: String(link.type || detectType(url)),
     note: String(link.note || '').trim(),
-    deadline: String(link.deadline || '').trim(),
+    deadline: endD,
+    start: startD,
     sort: nextSort(rows, dept),
     active: 'Y',
     updatedBy: me.name,
@@ -960,6 +968,7 @@ function readLinks() {
     .map(function (l) {
       l.sort = Number(l.sort) || 0;
       l.deadline = asDateText(l.deadline);
+      l.start = asDateText(l.start);
       l.updatedAt = asDateText(l.updatedAt);
       l.files = parseFiles(l);
       return l;

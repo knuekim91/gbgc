@@ -56,7 +56,7 @@
     <button type="button" class="calpick" data-cal="2">2주</button>
     <button type="button" class="calpick" data-cal="4">4주</button>
   </div>
-  <section id="calendar" class="calendar" hidden aria-label="마감일 캘린더"></section>
+  <section id="calendar" class="calendar" hidden aria-label="일정 캘린더"></section>
 
   <div id="board" class="board"></div>
 </main>
@@ -171,13 +171,18 @@
     </div>
 
     <div class="row2">
+      <label><span class="lbl">시작일 <span class="muted">(선택)</span></span>
+        <input name="start" type="date">
+      </label>
       <label><span class="lbl">마감일 <span class="muted">(선택)</span></span>
         <input name="deadline" type="date">
       </label>
-      <label><span class="lbl">메모 <span class="muted">(선택)</span></span>
-        <input name="note" placeholder="예) 담임 선생님만">
-      </label>
     </div>
+    <p class="hint">여러 날 이어지는 행사는 <b>시작일~마감일</b>을 모두 넣으면 캘린더에 하나로 이어 표시됩니다. 하루짜리는 마감일만 넣으세요.</p>
+
+    <label><span class="lbl">메모 <span class="muted">(선택)</span></span>
+      <input name="note" placeholder="예) 담임 선생님만">
+    </label>
 
     <div class="track-box">
       <label class="check">

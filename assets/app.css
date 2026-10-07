@@ -338,8 +338,9 @@ code {
 .cal-span { font-size: 12px; font-weight: 500; color: var(--ink-3); margin-left: 6px; }
 .cal-tools { display: flex; align-items: center; gap: 7px; }
 
-.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.cal-week { margin-bottom: 5px; }
+/* 요일 이름 + 날짜 칸은 같은 7열 격자 + 같은 가로 간격을 써서 칸이 정확히 맞물립니다. */
+.cal-week { display: grid; grid-template-columns: repeat(7, 1fr); column-gap: 5px; margin-bottom: 5px; }
+.cal-grid { display: flex; flex-direction: column; gap: 5px; }
 .cal-wd {
   text-align: center; font-size: 11.5px; font-weight: 700; color: var(--ink-3);
   padding: 2px 0;
@@ -347,17 +348,16 @@ code {
 .cal-wd.sun { color: #d0433a; }
 .cal-wd.sat { color: #2f6df6; }
 
-.cal-day {
+/* 한 주 = 날짜 칸(아래층) + 일정 띠(위층). 띠는 칸을 가로질러 하나로 이어집니다. */
+.cal-wrow { position: relative; }
+.cal-dates { display: grid; grid-template-columns: repeat(7, 1fr); column-gap: 5px; }
+.cal-dates .cal-day {
+  min-height: var(--need, 90px);
   border: 1px solid var(--line-2); border-radius: 8px;
-  padding: 5px 5px 6px; background: var(--panel-2);
-  display: flex; flex-direction: column; gap: 3px; min-width: 0;
+  padding: 4px 5px 6px; background: var(--panel-2); min-width: 0;
 }
-/* 2주는 넉넉하게, 4주는 조금 낮게 */
-.calendar.w2 .cal-day { min-height: 112px; }
-.calendar.w4 .cal-day { min-height: 82px; }
-
-.cal-day.past { opacity: .55; }
-.cal-day.today {
+.cal-dates .cal-day.past { opacity: .55; }
+.cal-dates .cal-day.today {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
@@ -370,17 +370,31 @@ code {
 .cal-date.sat { color: #2f6df6; }
 .cal-day.today .cal-date { color: var(--accent); }
 
-/* 칸이 좁아 부서명은 넣지 않습니다. 대신 제목 자체를 부서 색으로 칠하고
-   왼쪽에 색 띠를 둘러, 같은 부서 일정이 한눈에 묶여 보이게 했습니다. */
+/* 일정 띠 층 — 날짜 칸과 똑같은 7열 격자(같은 간격)라 열이 정확히 겹칩니다.
+   날짜 숫자 아래(--headH)부터 줄(lane)마다 띠를 쌓습니다. */
+.cal-bars {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+  display: grid; grid-template-columns: repeat(7, 1fr); column-gap: 5px;
+  grid-auto-rows: var(--barH, 17px); row-gap: var(--barGap, 3px);
+  align-content: start; padding-top: var(--headH, 22px);
+  pointer-events: none;
+}
+
+/* 제목을 부서 색으로 칠하고 왼쪽에 색 띠를 둘러 어느 부서 일인지 보이게 합니다.
+   여러 날 행사는 한 띠가 여러 칸(과 그 사이 틈)을 덮어 쭉 이어집니다. */
 .cal-ev {
-  display: block; width: 100%; text-align: left; cursor: pointer;
-  font: inherit; font-size: 8.5px; line-height: 1.4; font-weight: 600;
-  border: 0; border-left: 3px solid var(--dept, var(--accent));
-  border-radius: 4px; padding: 3px 5px;
+  pointer-events: auto; cursor: pointer; align-self: start;
+  font: inherit; font-size: 8.5px; line-height: 1.55; font-weight: 600;
+  text-align: left; border: 0; border-left: 3px solid var(--dept, var(--accent));
+  border-radius: 4px; padding: 0 5px;
   background: var(--dept-bg); color: var(--dept-ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0;
 }
 .cal-ev:hover { background: var(--dept-bg2); }
+/* 주 경계에서 잘린 쪽은 모서리를 펴고 색 띠를 없애 "이어지는 중"으로 보이게 합니다. */
+.cal-ev.cut-l { border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; padding-left: 5px; }
+.cal-ev.cut-r { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 
 /* 캘린더에서 눌러 찾아간 업무를 잠깐 표시합니다. */
 .item.flash { animation: itemFlash 1.2s ease-out; }
@@ -390,16 +404,12 @@ code {
 }
 
 @media (max-width: 720px) {
-  .cal-week, .cal-grid { gap: 3px; }
-  .cal-day { padding: 3px; }
-  .calendar.w2 .cal-day { min-height: 82px; }
-  .calendar.w4 .cal-day { min-height: 62px; }
-  /* 폭이 좁아 한 줄로는 몇 글자 못 봅니다. 두 줄까지 풀어 줍니다. */
-  .cal-ev {
-    padding: 2px 3px 0; line-height: 1.25;
-    white-space: normal; word-break: break-all;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  }
+  /* 세 격자의 가로 간격을 똑같이 줄여야 날짜 칸과 일정 띠의 열이 계속 맞물립니다. */
+  .cal-week, .cal-dates, .cal-bars { column-gap: 3px; }
+  .cal-grid { gap: 3px; }
+  .cal-dates .cal-day { padding: 3px; }
+  .cal-ev { font-size: 8px; padding: 0 3px; }
+  .cal-ev.cut-l { padding-left: 3px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

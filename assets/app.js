@@ -492,7 +492,7 @@
             '<span class="item-title" title="' + esc(l.title) + '">' + esc(l.title) + '</span>' +
             '<span class="item-meta">' +
               (showDept ? '<span class="tag dept" style="--dept:' + deptColor(l.dept) + '">' + esc(l.dept) + '</span>' : '') +
-              deadlineTag(l.deadline) +
+              dateTag(l) +
               progressTag(l) +
               (l.note ? '<span class="tag">' + esc(l.note) + '</span>' : '') +
               (l.desc ? '<span class="tag has-desc">내용있음</span>' : '') +
@@ -570,34 +570,70 @@
   }
 
 
+  function parseYMD(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+
+  /** 업무의 일정 구간을 구합니다. 시작·마감 한쪽만 있으면 하루짜리입니다. */
+  function evRange(l) {
+    var s = parseYMD(l.start), e = parseYMD(l.deadline);
+    if (!s && !e) return null;
+    if (!s) s = e;
+    if (!e) e = s;
+    if (s > e) { var t = s; s = e; e = t; }
+    return { s: s, e: e };
+  }
+
+  function mdSlash(ymd) { return String(ymd).slice(5).replace('-', '/'); }
+
+  /** 날짜 꼬리표 — 여러 날 행사는 "10/8~10/10", 하루는 기존 D-day 식으로. */
+  function dateTag(l) {
+    if (l.start && l.deadline && l.start !== l.deadline) {
+      var n = daysLeft(l.deadline);
+      var cls = n === null ? 'due' : (n < 0 ? 'past' : (n <= 7 ? 'urgent' : 'due'));
+      return '<span class="tag ' + cls + '">' + mdSlash(l.start) + '~' + mdSlash(l.deadline) + '</span>';
+    }
+    return deadlineTag(l.deadline);
+  }
+
+  var DAY_MS = 24 * 3600 * 1000;
+  function dayDiff(a, b) { return Math.round((a - b) / DAY_MS); }
+
   function renderCalendar() {
     var weeks = Number(state.cal) || 0;
     $('#calBar').hidden = !!weeks;
     $('#calendar').hidden = !weeks;
     if (!weeks) return;
 
+    var narrow = window.matchMedia('(max-width: 720px)').matches;
+    var M = ({
+      2: narrow ? { baseH: 86, headH: 18, barH: 14, gap: 2 } : { baseH: 112, headH: 22, barH: 17, gap: 3 },
+      4: narrow ? { baseH: 64, headH: 16, barH: 13, gap: 2 } : { baseH: 82,  headH: 20, barH: 15, gap: 2 }
+    })[weeks];
+
     // 이번 주 일요일부터 시작합니다.
     var today = midnight(new Date());
     var start = addDays(today, -today.getDay());
     var days = weeks * 7;
+    var gridEnd = addDays(start, days - 1);
 
-    // 마감일이 있는 업무를 날짜별로 모읍니다. (지금 걸러 놓은 목록만)
-    var byDay = {};
+    // 지금 걸러 놓은 목록 중 이 기간과 겹치는 일정만 모읍니다.
+    var events = [];
     visibleLinks().forEach(function (l) {
-      if (!l.deadline) return;
-      var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(l.deadline));
-      if (!m) return;
-      var key = m[1] + '-' + m[2] + '-' + m[3];
-      (byDay[key] = byDay[key] || []).push(l);
+      var r = evRange(l);
+      if (!r) return;
+      if (r.e < start || r.s > gridEnd) return;
+      events.push({ s: r.s, e: r.e, l: l });
     });
 
-    var last = addDays(start, days - 1);
+    var last = gridEnd;
     var span = (start.getMonth() + 1) + '월 ' + start.getDate() + '일 – ' +
                (last.getMonth() + 1) + '월 ' + last.getDate() + '일';
 
     var head =
       '<div class="cal-head">' +
-        '<div class="cal-title">📅 마감일 캘린더 <span class="cal-span">' + span + '</span></div>' +
+        '<div class="cal-title">📅 일정 캘린더 <span class="cal-span">' + span + '</span></div>' +
         '<div class="cal-tools">' +
           '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-cal="2">2주</button>' +
           '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-cal="4">4주</button>' +
@@ -609,32 +645,74 @@
       return '<div class="cal-wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '') + '">' + w + '</div>';
     }).join('') + '</div>';
 
-    var cells = '';
-    for (var i = 0; i < days; i++) {
-      var d = addDays(start, i);
-      var key = ymdKey(d);
-      var list = byDay[key] || [];
-      var isToday = d.getTime() === today.getTime();
-      var dow = d.getDay();
+    var rows = '';
+    for (var w = 0; w < weeks; w++) {
+      var wStart = addDays(start, w * 7);
+      var wEnd = addDays(start, w * 7 + 6);
 
-      cells += '<div class="cal-day' + (isToday ? ' today' : '') +
-        (d < today ? ' past' : '') + '">' +
-        '<div class="cal-date' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') + '">' +
-          (d.getDate() === 1 ? (d.getMonth() + 1) + '/' : '') + d.getDate() +
-        '</div>' +
-        list.map(function (l) {
-          // 칸이 좁아 부서명은 빼고 제목만 둡니다. 대신 제목을 부서 색으로 칠해
-          // 어느 부서 일인지 보이게 했습니다. 부서명은 마우스를 올리면 나옵니다.
-          return '<button type="button" class="cal-ev" data-goto="' + esc(l.id) + '"' +
-            ' style="--dept:' + deptColor(l.dept) + '"' +
-            ' title="' + esc(l.dept + ' · ' + l.title) + '">' +
-            esc(l.title) + '</button>';
-        }).join('') +
+      // 이 주에 걸치는 구간을 칸(0~6)으로 자릅니다.
+      var segs = [];
+      events.forEach(function (ev) {
+        if (ev.e < wStart || ev.s > wEnd) return;
+        segs.push({
+          c1: Math.max(0, dayDiff(ev.s, wStart)),
+          c2: Math.min(6, dayDiff(ev.e, wStart)),
+          l: ev.l,
+          isStart: ev.s >= wStart,
+          isEnd: ev.e <= wEnd
+        });
+      });
+
+      // 겹치지 않게 줄(lane)을 배정합니다. 한 일정은 모든 날에서 같은 줄에 놓여
+      // 쭉 이어진 띠로 보입니다.
+      segs.sort(function (a, b) { return a.c1 - b.c1 || (b.c2 - b.c1) - (a.c2 - a.c1); });
+      var laneEnd = [];
+      segs.forEach(function (sg) {
+        var ln = 0;
+        while (ln < laneEnd.length && laneEnd[ln] >= sg.c1) ln++;
+        sg.lane = ln;
+        laneEnd[ln] = sg.c2;
+      });
+      var lanes = laneEnd.length;
+      var need = Math.max(M.baseH, M.headH + lanes * (M.barH + M.gap) + 6);
+
+      // 날짜 칸 7개
+      var dates = '';
+      for (var i = 0; i < 7; i++) {
+        var d = addDays(wStart, i);
+        var isToday = d.getTime() === today.getTime();
+        var dow = d.getDay();
+        dates += '<div class="cal-day' + (isToday ? ' today' : '') + (d < today ? ' past' : '') + '">' +
+          '<div class="cal-date' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') + '">' +
+            (d.getDate() === 1 ? (d.getMonth() + 1) + '/' : '') + d.getDate() +
+          '</div>' +
+        '</div>';
+      }
+
+      // 일정 띠 — 칸을 가로질러 하나로 이어집니다.
+      var bars = segs.map(function (sg) {
+        var l = sg.l;
+        var r = evRange(l);
+        var range = (l.start && l.deadline && l.start !== l.deadline)
+          ? ' · ' + mdSlash(l.start) + '~' + mdSlash(l.deadline) : '';
+        return '<button type="button" class="cal-ev' +
+          (sg.isStart ? '' : ' cut-l') + (sg.isEnd ? '' : ' cut-r') + '"' +
+          ' data-goto="' + esc(l.id) + '"' +
+          ' style="--dept:' + deptColor(l.dept) + ';grid-column:' + (sg.c1 + 1) + '/' + (sg.c2 + 2) +
+            ';grid-row:' + (sg.lane + 1) + '"' +
+          ' title="' + esc(l.dept + ' · ' + l.title + range) + '">' +
+          (sg.isStart || sg.c1 === 0 ? esc(l.title) : '') + '</button>';
+      }).join('');
+
+      rows += '<div class="cal-wrow" style="--need:' + need + 'px;--headH:' + M.headH +
+        'px;--barH:' + M.barH + 'px;--barGap:' + M.gap + 'px">' +
+        '<div class="cal-dates">' + dates + '</div>' +
+        '<div class="cal-bars">' + bars + '</div>' +
       '</div>';
     }
 
     $('#calendar').className = 'calendar w' + weeks;
-    $('#calendar').innerHTML = head + names + '<div class="cal-grid">' + cells + '</div>';
+    $('#calendar').innerHTML = head + names + '<div class="cal-grid">' + rows + '</div>';
   }
 
   // 보기 전환 · 숨기기
@@ -746,7 +824,7 @@
   function openAddWith(seed) {
     openLinkForm({
       id: '', dept: myDepts()[0] || '', title: seed.title || '',
-      url: seed.url || '', deadline: '', note: '', track: '', target: ''
+      url: seed.url || '', deadline: '', start: '', note: '', track: '', target: ''
     });
     $('#linkFormTitle').textContent = '업무 추가';
   }
@@ -989,6 +1067,7 @@
       f.title.value = link.title;
       f.url.value = link.url;
       f.deadline.value = link.deadline || '';
+      f.start.value = link.start || '';
       f.note.value = link.note || '';
       f.desc.value = link.desc || '';
       setAttached(link.files || []);
@@ -1131,10 +1210,14 @@
     e.preventDefault();
     var f = e.target;
     showErr(f, '');
+    // 시작일·마감일을 둘 다 넣었는데 순서가 뒤집혔으면 미리 잡아 줍니다.
+    if (f.start.value && f.deadline.value && f.start.value > f.deadline.value) {
+      return showErr(f, '시작일이 마감일보다 늦습니다. 날짜를 확인해 주세요.');
+    }
     api('saveLink', {
       link: {
         id: f.id.value, dept: f.dept.value, title: f.title.value.trim(),
-        url: f.url.value.trim(), deadline: f.deadline.value, note: f.note.value.trim(),
+        url: f.url.value.trim(), deadline: f.deadline.value, start: f.start.value, note: f.note.value.trim(),
         desc: f.desc.value.trim(), track: f.track.checked, target: f.target.value,
         files: attached
       }
