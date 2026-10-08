@@ -79,6 +79,7 @@ function handle(req) {
       case 'saveConfig':     return json(actSaveConfig(req));
       case 'saveNotice':     return json(actSaveNotice(req));
       case 'dailyPosts':     return json(actDailyPosts(req));
+      case 'weeklyPosts':    return json(actWeeklyPosts(req));
       default:               return json({ ok: false, error: '알 수 없는 요청: ' + action });
     }
   } catch (err) {
@@ -926,6 +927,49 @@ function actDailyPosts(req) {
   var NL = String.fromCharCode(10);
   var msg = header + NL + lines.join(NL) + (rest > 0 ? NL + '…외 ' + rest + '건' : '');
   return { status: 'ok', date: today, count: rows.length, message: msg };
+}
+
+/**
+ * 주간 요약 — 최근 7일(오늘 포함) 안에 올라온 글. 금요일 17시 루틴이 부릅니다.
+ * GET  .../exec?action=weeklyPosts&key=XXX
+ */
+function actWeeklyPosts(req) {
+  var want = digestKey();
+  if (!want || String(req.key || '') !== want) {
+    return { status: 'error', error: 'key' };
+  }
+
+  var todayStr = Utilities.formatDate(new Date(), tz(), 'yyyy-MM-dd');
+  var p = todayStr.split('-');
+  // 날짜 문자열만 비교하므로, UTC 정오 기준으로 6일 빼서 경계 오차를 없앱니다.
+  var cut = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 12) - 6 * 24 * 3600 * 1000);
+  var cutoffStr = Utilities.formatDate(cut, tz(), 'yyyy-MM-dd');
+
+  var box = archiveDept();
+  var rows = readLinks().filter(function (l) {
+    var d = String(l.updatedAt).slice(0, 10);
+    return d >= cutoffStr && d <= todayStr && l.dept !== box;
+  });
+  // 최근 글이 위로 오게 정렬
+  rows.sort(function (a, b) { return String(b.updatedAt).localeCompare(String(a.updatedAt)); });
+
+  var span = cutoffStr.slice(5).replace('-', '/') + '~' + todayStr.slice(5).replace('-', '/');
+  var header = '[업무허브] 주간 요약 (' + span + ') ' + rows.length + '건';
+  if (!rows.length) {
+    return { status: 'ok', from: cutoffStr, to: todayStr, count: 0, message: header };
+  }
+
+  var LIMIT = 190, NL = String.fromCharCode(10);
+  var lines = [], used = header.length, shown = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var by = String(rows[i].updatedBy || '').trim();
+    var line = '· [' + rows[i].dept + '] ' + String(rows[i].title || '').trim() + (by ? ' (' + by + ')' : '');
+    if (used + 1 + line.length > LIMIT && shown > 0) break;
+    lines.push(line); used += 1 + line.length; shown++;
+  }
+  var rest = rows.length - shown;
+  var msg = header + NL + lines.join(NL) + (rest > 0 ? NL + '…외 ' + rest + '건' : '');
+  return { status: 'ok', from: cutoffStr, to: todayStr, count: rows.length, message: msg };
 }
 
 /* ===================== 토큰 / 해시 ===================== */
