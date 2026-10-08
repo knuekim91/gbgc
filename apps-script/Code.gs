@@ -78,6 +78,7 @@ function handle(req) {
       case 'resetPassword':  return json(actResetPassword(req));
       case 'saveConfig':     return json(actSaveConfig(req));
       case 'saveNotice':     return json(actSaveNotice(req));
+      case 'dailyPosts':     return json(actDailyPosts(req));
       default:               return json({ ok: false, error: '알 수 없는 요청: ' + action });
     }
   } catch (err) {
@@ -880,6 +881,51 @@ function assertCanEdit(user, dept) {
   if (mine.indexOf(String(dept).trim()) < 0) {
     throw new Error('"' + dept + '" 부서는 수정 권한이 없습니다. (내 부서: ' + user.dept + ')');
   }
+}
+
+/* ===================== 오늘의 글 요약(카톡 루틴용) ===================== */
+
+/**
+ * 하루 두 번 도는 카톡 루틴이 부를 읽기 전용 엔드포인트입니다.
+ * GET  .../exec?action=dailyPosts&key=XXX
+ * 로그인 잠금과 별개의 통로라, Script Property 의 DIGEST_KEY 로 막습니다.
+ * (키를 안 넣으면 이 기능은 꺼진 셈이 됩니다.)
+ */
+function digestKey() {
+  return String(PropertiesService.getScriptProperties().getProperty('DIGEST_KEY') || '');
+}
+
+function actDailyPosts(req) {
+  var want = digestKey();
+  if (!want || String(req.key || '') !== want) {
+    return { status: 'error', error: 'key' };
+  }
+
+  var today = Utilities.formatDate(new Date(), tz(), 'yyyy-MM-dd');
+  var box = archiveDept();
+  var rows = readLinks().filter(function (l) {
+    return String(l.updatedAt).slice(0, 10) === today && l.dept !== box;  // 창고로 보낸 건 제외
+  });
+
+  var md = (new Date()).getMonth() + 1 + '/' + (new Date()).getDate();
+  var header = '[업무허브] ' + md + ' 오늘 올라온 글 ' + rows.length + '건';
+  if (!rows.length) {
+    return { status: 'ok', date: today, count: 0, message: header };
+  }
+
+  // 200자(카톡 제한)에 맞춰 담고, 넘치면 "…외 K건" 으로 접습니다.
+  var LIMIT = 190;
+  var lines = [], used = header.length, shown = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var by = String(rows[i].updatedBy || '').trim();
+    var line = '· [' + rows[i].dept + '] ' + String(rows[i].title || '').trim() + (by ? ' (' + by + ')' : '');
+    if (used + 1 + line.length > LIMIT && shown > 0) break;
+    lines.push(line); used += 1 + line.length; shown++;
+  }
+  var rest = rows.length - shown;
+  var NL = String.fromCharCode(10);
+  var msg = header + NL + lines.join(NL) + (rest > 0 ? NL + '…외 ' + rest + '건' : '');
+  return { status: 'ok', date: today, count: rows.length, message: msg };
 }
 
 /* ===================== 토큰 / 해시 ===================== */
