@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>중간시험 감독 시간표</title>
+<title>2026학년도 2학기 중간시험</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--tx:#1f2937;--mu:#6b7280;--bd:#e5e7eb;--pr:#2563eb;--prbg:#dbeafe;--hl:#fef3c7}
 @media (prefers-color-scheme:dark){:root{--bg:#111827;--card:#1f2937;--tx:#f3f4f6;--mu:#9ca3af;--bd:#374151;--pr:#60a5fa;--prbg:#1e3a5f;--hl:#5b4a12}}
@@ -38,7 +38,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 2px}
 </head>
 <body>
 <div class="wrap">
-  <h1 id="title"></h1><div class="sub" id="school"></div>
+  <h1>2026학년도 2학기 중간시험</h1><div class="sub"><span id="title"></span> · <span id="school"></span></div>
   <div class="tabs">
     <button class="tab on" data-t="sch">📅 시험 시간표</button>
     <button class="tab" data-t="srch">🔍 감독 검색</button>
@@ -67,7 +67,7 @@ const D = {"title": "2026학년도 2학기 중간시험 감독 시간표", "scho
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const subj = s => esc(s).replace(/\n/g,'<br>');
-$('#title').textContent = D.title;
+$('#title').textContent = '감독 시간표';
 $('#school').textContent = D.school;
 const periodTh = (d,k) => `<th>${k+1}교시<small>${esc(D.days[d].times[k])}</small></th>`;
 
