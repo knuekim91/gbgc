@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>중간시험 감독 시간표</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--tx:#1f2937;--mu:#6b7280;--bd:#e5e7eb;--pr:#2563eb;--prbg:#dbeafe;--hl:#fef3c7}
+@media (prefers-color-scheme:dark){:root{--bg:#111827;--card:#1f2937;--tx:#f3f4f6;--mu:#9ca3af;--bd:#374151;--pr:#60a5fa;--prbg:#1e3a5f;--hl:#5b4a12}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Malgun Gothic",system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:1.25rem;margin:0}.sub{color:var(--mu);margin:2px 0 14px}
+.tabs{display:flex;gap:6px;margin:12px 0}
+.tab{flex:1;padding:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit;cursor:pointer}
+.tab.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:1.05rem;margin:0 0 10px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid var(--bd);padding:7px 8px;text-align:center;vertical-align:middle}
+th{background:var(--prbg)}th small{display:block;font-weight:400;color:var(--mu)}
+td.l{text-align:left;font-weight:600;white-space:nowrap}
+td.self{color:var(--mu)}
+.scroll{overflow-x:auto}
+.search{display:flex;gap:8px}
+.search input{flex:1;padding:12px;font:inherit;font-size:1.05rem;border:2px solid var(--pr);border-radius:8px;background:var(--card);color:var(--tx);min-width:0}
+.search button{padding:0 16px;border:0;border-radius:8px;background:var(--pr);color:#fff;font:inherit;cursor:pointer}
+.msg{color:var(--mu);padding:12px 2px}
+.day-h{display:flex;justify-content:space-between;align-items:baseline}
+.cnt{color:var(--mu);font-size:.9rem}
+mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:99px;padding:4px 10px;font:inherit;font-size:.85rem;cursor:pointer}
+.note{font-size:.85rem;color:var(--mu);margin-top:6px}
+.hide{display:none}
+@media (max-width:560px){th,td{padding:6px 4px;font-size:.88rem}.wrap{padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="title"></h1><div class="sub" id="school"></div>
+  <div class="tabs">
+    <button class="tab on" data-t="sch">📅 시험 시간표</button>
+    <button class="tab" data-t="srch">🔍 감독 검색</button>
+  </div>
+
+  <section id="sch">
+    <div class="tabs" id="dayTabs"></div>
+    <div id="schOut"></div>
+  </section>
+
+  <section id="srch" class="hide">
+    <div class="card">
+      <div class="search">
+        <input id="q" type="search" placeholder="교사 성명을 입력하세요" autocomplete="off" list="names">
+        <button id="go">검색</button>
+      </div>
+      <datalist id="names"></datalist>
+      <div class="note">성명을 입력하면 날짜별 교시·학년반(장소) 감독 내용이 표시됩니다.</div>
+    </div>
+    <div id="srchOut"></div>
+  </section>
+</div>
+
+<script>
+const D = {"title": "2026학년도 2학기 중간시험 감독 시간표", "school": "경북여자상업고등학교", "days": [{"label": "10월 14일(수)", "times": ["08:50~09:40", "09:55~10:45", "11:00~11:50"]}, {"label": "10월 15일(목)", "times": ["08:50~09:40", "09:55~10:45", "11:00~11:50"]}, {"label": "10월 16일(금)", "times": ["08:50~09:40", "09:55~10:45", "11:00~11:50"]}], "halls": [{"place": "4층 복도 남", "sup": [["", "", "김종대"], ["", "김명준", "이은숙"], ["", "강순경", "윤재욱"]]}, {"place": "4층 복도 북", "sup": [["", "", "김소양"], ["", "", "권가영"], ["", "김소양", "전다윤"]]}, {"place": "5층 복도 남", "sup": [["", "", "이대희"], ["", "박재규", "노종섭"], ["", "오세윤", "김소양"]]}, {"place": "5층 복도 북", "sup": [["", "", "김소양"], ["", "김슬기", "이점희"], ["", "권가영", "이수진"]]}], "groups": [{"subjects": [["자습", "자습", "공통수학1"], ["자습", "회계정보처리시스템", "통합사회2"], ["자습", "공통국어2", "한국사2"]], "classes": [{"cls": "1-1", "area": "공통", "sup": [["오세윤", "허준영", "권대환"], ["이점희", "이대희", "김슬기"], ["김효주", "윤재욱", "이은주"]]}, {"cls": "1-2", "area": "공통", "sup": [["정대명", "윤재욱", "전다윤"], ["김태성", "도호영", "김효주"], ["홍진리", "이수진", "노종섭"]]}, {"cls": "1-3", "area": "공통", "sup": [["김재홍", "김종대", "윤재욱"], ["표정현", "사공걸", "박재규"], ["오세윤", "김지언", "권대환"]]}, {"cls": "1-4", "area": "공통", "sup": [["여상척", "이시영", "황혜원"], ["김명준", "권가영", "이지은"], ["김동익", "사공걸", "김종대"]]}], "grade": 1, "area": "공통", "label": "1-1 ~ 1-4"}, {"subjects": [["자습", "자습", "공통영어1"], ["자습", "인체구조와기능", "통합사회2"], ["자습", "공통국어2", "한국사2"]], "classes": [{"cls": "1-5", "area": "보건행정", "sup": [["김지언", "박재규", "허준영"], ["김동익", "이수진", "이은주"], ["김종대", "김재홍", "오세윤"]]}, {"cls": "1-6", "area": "보건행정", "sup": [["이은숙", "홍진리", "김효주"], ["강순경", "김종대", "이시영"], ["박재규", "이지은", "권퀴리"]]}], "grade": 1, "area": "보건행정", "label": "1-5 ~ 1-6"}, {"subjects": [["자습", "자습", "공통영어1"], ["자습", "자습", "통합사회2"], ["자습", "공통국어2", "한국사2"]], "classes": [{"cls": "1-7", "area": "3D융합콘텐츠", "sup": [["김경희", "김정선", "정대명"], ["박재규", "허준영", "이현정"], ["이보경", "황혜원", "이현나"]]}, {"cls": "1-8", "area": "3D융합콘텐츠", "sup": [["사공걸", "권퀴리", "노종섭"], ["여상척", "이은주", "이현나"], ["황혜원", "김태성", "이현정"]]}], "grade": 1, "area": "3D융합콘텐츠", "label": "1-7 ~ 1-8"}, {"subjects": [["자습", "자습", "공통영어1"], ["자습", "인체구조와기능", "통합사회2"], ["자습", "공통국어1", "한국사1"]], "classes": [{"cls": "1-5 (음악실 위탁)", "area": "음악실(위탁)", "sup": [["하진미", "하진미", "하진미"], ["하진미", "하진미", "하진미"], ["하진미", "하진미", "하진미"]]}], "grade": 1, "area": "음악실(위탁)", "label": "1-5 (음악실 위탁)"}, {"subjects": [["자습", "자습", "공통영어2"], ["자습", "한문Ⅰ", "직무수학"], ["자습", "세무일반", "직무의사소통"]], "classes": [{"cls": "2-1", "area": "경영사무", "sup": [["이은주", "이대희", "안대병"], ["황혜원", "이현정", "홍진리"], ["김지언", "이점희", "권가영"]]}, {"cls": "2-2", "area": "경영사무", "sup": [["이보경", "노종섭", "이점희"], ["이지은", "이현나", "김정선"], ["표정현", "안대병", "김동익"]]}], "grade": 2, "area": "경영사무", "label": "2-1 ~ 2-2"}, {"subjects": [["자습", "자습", "공통영어2"], ["자습", "한문Ⅰ", "직무수학"], ["자습", "세무일반", "직무의사소통"]], "classes": [{"cls": "2-3", "area": "금융회계", "sup": [["이점희", "권가영", "김태성"], ["김지현", "김동익", "김경희"], ["이수진", "표정현", "강순경"]]}, {"cls": "2-4", "area": "금융회계", "sup": [["도호영", "김태성", "표정현"], ["김지언", "박민정", "이보경"], ["윤재욱", "김명준", "여상척"]]}], "grade": 2, "area": "금융회계", "label": "2-3 ~ 2-4"}, {"subjects": [["자습", "자습", "통합과학1"], ["자습", "자습", "직무수학"], ["자습", "보건의료법규", "직무의사소통"]], "classes": [{"cls": "2-5", "area": "보건행정", "sup": [["표정현", "김슬기", "김명준"], ["장용준", "전다윤", "여상척"], ["권대환", "이현나", "박재규"]]}, {"cls": "2-6", "area": "보건행정", "sup": [["김명준", "이수진", "김동익"], ["김경희", "권대환", "장용준"], ["노종섭", "이현정", "김슬기"]]}], "grade": 2, "area": "보건행정", "label": "2-5 ~ 2-6"}, {"subjects": [["자습", "자습", "통합과학1"], ["자습", "자습", "직무수학"], ["자습", "자습", "직무의사소통"]], "classes": [{"cls": "2-7", "area": "3D융합콘텐츠", "sup": [["김동익", "김지언", "강순경"], ["김재홍", "노종섭", "오세윤"], ["이지은", "김정선", "장용준"]]}, {"cls": "2-8", "area": "3D융합콘텐츠", "sup": [["강순경", "이지은", "김경희"], ["김효주", "안대병", "김지언"], ["이점희", "여상척", "이은숙"]]}], "grade": 2, "area": "3D융합콘텐츠", "label": "2-7 ~ 2-8"}, {"subjects": [["정규수업", "정규수업", "정규수업"], ["정규수업", "정규수업", "정규수업"], ["정규수업", "정규수업", "정규수업"]], "classes": [{"cls": "3-1", "area": "경영사무", "sup": [["권퀴리", "이은주", "길하나"], ["박민정", "장현석", "전다윤"], ["전다윤", "정대명", "김지현"]]}, {"cls": "3-2", "area": "경영사무", "sup": [["장용준", "조영숙", "권퀴리"], ["조영숙", "권퀴리", "이대희"], ["길하나", "이은숙", "조영숙"]]}, {"cls": "3-3", "area": "경영사무", "sup": [["김지현", "이보경", "박민정"], ["이보경", "장용준", "조영숙"], ["김슬기", "이대희", "이보경"]]}], "grade": 3, "area": "경영사무", "label": "3-1 ~ 3-3"}, {"subjects": [["정규수업", "정규수업", "정규수업"], ["정규수업", "정규수업", "정규수업"], ["정규수업", "정규수업", "정규수업"]], "classes": [{"cls": "3-4", "area": "금융회계", "sup": [["윤재욱", "김효주", "이보경"], ["이은주", "이보경", "김지현"], ["장용준", "박민정", "김효주"]]}, {"cls": "3-5", "area": "금융회계", "sup": [["황혜원", "도호영", "이시영"], ["도호영", "이시영", "도호영"], ["이시영", "장현석", "이시영"]]}, {"cls": "3-6", "area": "금융회계", "sup": [["이시영", "황혜원", "김지현"], ["이시영", "김경희", "이수진"], ["도호영", "허준영", "길하나"]]}], "grade": 3, "area": "금융회계", "label": "3-4 ~ 3-6"}, {"subjects": [["정규수업", "정규수업", "정규수업"], ["정규수업", "정규수업", "정규수업"], ["정규수업", "정규수업", "정규수업"]], "classes": [{"cls": "3-7", "area": "3D융합콘텐츠", "sup": [["김정선", "정대명", "김정선"], ["길하나", "허준영", "정대명"], ["김정선", "김지현", "홍진리"]]}, {"cls": "3-8", "area": "3D융합콘텐츠", "sup": [["길하나", "장현석", "장현석"], ["정대명", "정대명", "길하나"], ["허준영", "길하나", "이대희"]]}], "grade": 3, "area": "3D융합콘텐츠", "label": "3-7 ~ 3-8"}]};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const subj = s => esc(s).replace(/\n/g,'<br>');
+$('#title').textContent = D.title;
+$('#school').textContent = D.school;
+const periodTh = (d,k) => `<th>${k+1}교시<small>${esc(D.days[d].times[k])}</small></th>`;
+
+// ── 시험 시간표 ──
+let curDay = 0;
+const today = new Date(), m = today.getMonth()+1, dd = today.getDate();
+D.days.forEach((d,i)=>{ if (d.label.startsWith(`${m}월 ${dd}일`)) curDay = i; });
+function renderDayTabs(){
+  $('#dayTabs').innerHTML = D.days.map((d,i)=>`<button class="tab${i===curDay?' on':''}" data-d="${i}">${esc(d.label)}</button>`).join('');
+  $('#dayTabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{curDay=+b.dataset.d;renderDayTabs();renderSchedule();});
+}
+function renderSchedule(){
+  const d = curDay;
+  let h = '';
+  [1,2,3].forEach(g=>{
+    const gs = D.groups.filter(x=>x.grade===g);
+    h += `<div class="card"><h2>${g}학년 · ${esc(D.days[d].label)}</h2><div class="scroll"><table><thead><tr><th>학급</th>`;
+    for(let k=0;k<3;k++) h += periodTh(d,k);
+    h += '</tr></thead><tbody>';
+    gs.forEach(x=>{
+      h += `<tr><td class="l">${esc(x.label)}<small style="display:block;font-weight:400;color:var(--mu)">${esc(x.area.replace(/\n/g,''))}</small></td>`;
+      x.subjects[d].forEach(s=>{ h += `<td class="${/자습|정규수업/.test(s)?'self':''}">${subj(s)}</td>`; });
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    if (g===3) h += '<div class="note">3학년은 시험 없이 정규수업으로 진행됩니다.</div>';
+    h += '</div>';
+  });
+  $('#schOut').innerHTML = h;
+}
+
+// ── 감독 검색 ──
+const hits = {};   // name -> [{d,k,where,subject}]
+function add(name, d, k, where, subject){
+  if(!name) return;
+  (hits[name] = hits[name] || []).push({d,k,where,subject});
+}
+D.halls.forEach(hl=>hl.sup.forEach((day,d)=>day.forEach((n,k)=>add(n,d,k,hl.place,''))));
+D.groups.forEach(g=>g.classes.forEach(c=>c.sup.forEach((day,d)=>day.forEach((n,k)=>add(n,d,k,c.cls,g.subjects[d][k])))));
+const allNames = Object.keys(hits).sort((a,b)=>a.localeCompare(b,'ko'));
+$('#names').innerHTML = allNames.map(n=>`<option value="${esc(n)}">`).join('');
+
+function search(){
+  const q = $('#q').value.trim().replace(/\s+/g,'');
+  const out = $('#srchOut');
+  if(!q){ out.innerHTML = `<div class="msg">성명을 입력해 주세요.</div>`; return; }
+  const found = allNames.filter(n=>n.includes(q));
+  if(!found.length){ out.innerHTML = `<div class="msg">‘${esc(q)}’ 선생님의 감독 내용이 없습니다. 성명을 다시 확인해 주세요.</div>`; return; }
+  if(found.length>1 && !found.includes(q)){
+    out.innerHTML = `<div class="msg">여러 명이 검색되었습니다. 선택해 주세요.</div><div class="chips">${found.map(n=>`<button class="chip" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>`;
+    out.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#q').value=b.dataset.n;search();});
+    return;
+  }
+  const name = found.includes(q) ? q : found[0];
+  const list = hits[name];
+  let h = `<div class="card"><h2>${esc(name)} 선생님 · 총 ${list.length}회 감독</h2></div>`;
+  D.days.forEach((day,d)=>{
+    const rows = list.filter(x=>x.d===d).sort((a,b)=>a.k-b.k);
+    h += `<div class="card"><div class="day-h"><h2>${esc(day.label)}</h2><span class="cnt">${rows.length}회</span></div>`;
+    if(!rows.length) h += `<div class="msg">감독 없음</div>`;
+    else{
+      h += `<div class="scroll"><table><thead><tr><th>교시</th><th>시간</th><th>학년·반 / 장소</th><th>시험과목</th></tr></thead><tbody>`;
+      rows.forEach(r=>{
+        h += `<tr><td>${r.k+1}교시</td><td>${esc(day.times[r.k])}</td><td><b>${esc(r.where)}</b></td><td>${subj(r.subject||'—')}</td></tr>`;
+      });
+      h += '</tbody></table></div>';
+    }
+    h += '</div>';
+  });
+  out.innerHTML = h;
+}
+$('#go').onclick = search;
+$('#q').addEventListener('keydown',e=>{ if(e.key==='Enter') search(); });
+$('#q').addEventListener('change', search);
+
+document.querySelectorAll('.tabs > .tab[data-t]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs > .tab[data-t]').forEach(x=>x.classList.toggle('on',x===b));
+  $('#sch').classList.toggle('hide', b.dataset.t!=='sch');
+  $('#srch').classList.toggle('hide', b.dataset.t!=='srch');
+});
+renderDayTabs(); renderSchedule();
+$('#srchOut').innerHTML = '<div class="msg">성명을 입력하고 검색을 눌러 주세요.</div>';
+</script>
+</body>
+</html>
