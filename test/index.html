@@ -32,6 +32,9 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 2px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .chip{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:99px;padding:4px 10px;font:inherit;font-size:.85rem;cursor:pointer}
 .note{font-size:.85rem;color:var(--mu);margin-top:6px}
+.sug{margin-top:6px;max-height:226px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--bd);border-radius:8px;background:var(--card)}
+.sug button{display:block;width:100%;height:45px;padding:0 14px;border:0;border-bottom:1px solid var(--bd);background:none;color:var(--tx);font:inherit;text-align:left;cursor:pointer}
+.sug button:last-child{border-bottom:0}.sug button:active{background:var(--prbg)}
 .hide{display:none}
 @media (max-width:560px){th,td{padding:6px 4px;font-size:.88rem}.wrap{padding:12px}}
 </style>
@@ -52,10 +55,10 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 2px}
   <section id="srch" class="hide">
     <div class="card">
       <div class="search">
-        <input id="q" type="search" placeholder="교사 성명을 입력하세요" autocomplete="off" list="names">
+        <input id="q" type="search" placeholder="교사 성명을 입력하세요" autocomplete="off">
         <button id="go">검색</button>
       </div>
-      <datalist id="names"></datalist>
+      <div id="sug" class="sug hide" role="listbox"></div>
       <div class="note">성명을 입력하면 날짜별 교시·학년반(장소) 감독 내용이 표시됩니다.</div>
     </div>
     <div id="srchOut"></div>
@@ -108,7 +111,25 @@ function add(name, d, k, where, subject){
 D.halls.forEach(hl=>hl.sup.forEach((day,d)=>day.forEach((n,k)=>add(n,d,k,hl.place,''))));
 D.groups.forEach(g=>g.classes.forEach(c=>c.sup.forEach((day,d)=>day.forEach((n,k)=>add(n,d,k,c.cls,g.subjects[d][k])))));
 const allNames = Object.keys(hits).sort((a,b)=>a.localeCompare(b,'ko'));
-$('#names').innerHTML = allNames.map(n=>`<option value="${esc(n)}">`).join('');
+const LS='gbgc_lastTeacher';
+const store = {get(){try{return localStorage.getItem(LS)||''}catch(e){return ''}}, set(v){try{localStorage.setItem(LS,v)}catch(e){}}};
+function showSug(){
+  const q = $('#q').value.trim().replace(/\s+/g,'');
+  const list = allNames.filter(n=>n.includes(q));
+  const box = $('#sug');
+  if(!list.length || (list.length===1 && list[0]===q)){ box.classList.add('hide'); return; }
+  box.innerHTML = list.map(n=>`<button type="button" data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  box.scrollTop = 0;
+  box.classList.remove('hide');
+}
+function hideSug(){ $('#sug').classList.add('hide'); }
+$('#sug').addEventListener('click',e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  $('#q').value = b.dataset.n; hideSug(); $('#q').blur(); search();
+});
+$('#q').addEventListener('focus',showSug);
+$('#q').addEventListener('input',showSug);
+document.addEventListener('click',e=>{ if(!e.target.closest('.search') && !e.target.closest('#sug')) hideSug(); });
 
 function search(){
   const q = $('#q').value.trim().replace(/\s+/g,'');
@@ -122,6 +143,7 @@ function search(){
     return;
   }
   const name = found.includes(q) ? q : found[0];
+  store.set(name);
   const list = hits[name];
   let h = `<div class="card"><h2>${esc(name)} 선생님 · 총 ${list.length}회 감독</h2></div>`;
   D.days.forEach((day,d)=>{
@@ -139,9 +161,8 @@ function search(){
   });
   out.innerHTML = h;
 }
-$('#go').onclick = search;
-$('#q').addEventListener('keydown',e=>{ if(e.key==='Enter') search(); });
-$('#q').addEventListener('change', search);
+$('#go').onclick = ()=>{ hideSug(); search(); };
+$('#q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ hideSug(); $('#q').blur(); search(); } });
 
 document.querySelectorAll('.tabs > .tab[data-t]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs > .tab[data-t]').forEach(x=>x.classList.toggle('on',x===b));
@@ -150,6 +171,8 @@ document.querySelectorAll('.tabs > .tab[data-t]').forEach(b=>b.onclick=()=>{
 });
 renderDayTabs(); renderSchedule();
 $('#srchOut').innerHTML = '<div class="msg">성명을 입력하고 검색을 눌러 주세요.</div>';
+const last = store.get();
+if(last && hits[last]){ $('#q').value = last; search(); }
 </script>
 </body>
 </html>
