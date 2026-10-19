@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>문해력 일정</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📖</text></svg>">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .as-wrap { max-width: 960px; margin: 0 auto; padding: 18px 16px 48px; }
+  body.embed .as-wrap { padding: 2px 2px 8px; }
+  body.embed .as-top, body.embed h1 { display: none; }
+  .as-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .as-back { text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; background: var(--panel); }
+  .as-wrap h1 { font-size: 20px; margin: 10px 0 12px; letter-spacing: -.3px; }
+
+  .as-tabs { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 14px; }
+  .as-tab { border: 0; background: none; cursor: pointer; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink-2); padding: 7px 18px; border-radius: 999px; }
+  .as-tab.on { background: var(--accent); color: #fff; }
+
+  .as-scopelabel { color: var(--ink-2); font-size: 14px; font-weight: 600; margin: 0 0 12px; }
+  .as-scopelabel b { color: var(--accent); }
+  .as-state { color: var(--ink-3); padding: 24px 4px; font-size: 14px; }
+  .as-state.error { color: var(--danger); white-space: pre-line; }
+
+  .as-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .as-day { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-height: 110px; }
+  .as-dhead { padding: 9px 10px; border-bottom: 1px solid var(--line-2); display: flex; align-items: baseline; gap: 7px; }
+  .as-dname { font-weight: 800; font-size: 15px; }
+  .as-ddate { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .as-day.today { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .as-day.today .as-dhead { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .as-day.today .as-dname { color: var(--accent); }
+
+  .as-items { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .mh-il { background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); color: var(--accent); border-radius: 8px; padding: 8px 9px; font-size: 14px; font-weight: 800; }
+  .mh-ev { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid color-mix(in srgb, var(--warn-ink) 25%, transparent); border-radius: 8px; padding: 7px 9px; font-size: 12.5px; font-weight: 700; }
+  .as-empty { color: var(--ink-3); font-size: 12.5px; padding: 10px 9px; }
+
+  .as-wk { margin-bottom: 18px; }
+  .as-wklabel { font-size: 14px; font-weight: 800; color: var(--ink-2); margin: 0 0 8px; padding-left: 2px; display: flex; align-items: center; gap: 8px; }
+  .as-wk.now .as-wklabel { color: var(--accent); }
+  .as-wk.now .as-wklabel::after { content: '이번 주'; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 2px 8px; }
+
+  .as-note { margin-top: 16px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 12px 14px; color: var(--ink-2); font-size: 12.5px; line-height: 1.6; }
+  .as-foot { margin-top: 14px; color: var(--ink-3); font-size: 11.5px; }
+
+  @media (max-width: 720px) {
+    .as-grid { grid-template-columns: 1fr; }
+    .as-day { min-height: 0; }
+    .as-items { flex-direction: row; flex-wrap: wrap; }
+    .mh-il, .mh-ev { flex: 0 0 auto; }
+  }
+</style>
+</head>
+<body>
+<script>
+  try { var t = localStorage.getItem('gbgc.theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  var EMBED = location.search.indexOf('embed=1') >= 0;
+  if (EMBED) document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('embed'); });
+</script>
+
+<main class="as-wrap">
+  <div class="as-top"><a class="as-back" href="./">← 업무 허브로</a></div>
+  <h1>📖 문해력 일정</h1>
+
+  <div class="as-tabs" role="tablist">
+    <button type="button" class="as-tab" data-scope="week">이번주</button>
+    <button type="button" class="as-tab" data-scope="month">이번달</button>
+  </div>
+
+  <p class="as-scopelabel" id="scopeLabel" hidden></p>
+  <div id="state" class="as-state">불러오는 중…</div>
+  <section id="view" hidden></section>
+  <p class="as-note" id="noteBox" hidden>📖 매일 아침 8:30~8:45(15분) 문해력 교재의 <b>해당 일차</b>를 공부합니다. 날짜·일차는 학교 문해력 진도표 달력을 따릅니다.</p>
+  <p class="as-foot" id="foot" hidden></p>
+</main>
+
+<script>
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function pad(n){ return ('0'+n).slice(-2); }
+  function midnight(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d,n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()+n); }
+
+  var scope = 'week';
+  try { if (localStorage.getItem('gbgc.mh.scope') === 'month') scope = 'month'; } catch (e) {}
+
+  var MAP = null, YEAR = null;
+
+  function postHeight(){ if(!EMBED) return; try{ var h=$('.as-wrap').getBoundingClientRect().height+10; parent.postMessage({type:'embedHeight',id:'mhFrame',h:Math.ceil(h)},'*'); }catch(e){} }
+
+  function dayItemsHtml(dt){
+    var md = pad(dt.getMonth()+1)+'-'+pad(dt.getDate());
+    var r = MAP[md];
+    var parts = [];
+    if (r && r.il) parts.push('<li class="mh-il">📖 '+r.il+'일차</li>');
+    if (r && r.ev) parts.push('<li class="mh-ev">'+esc(r.ev)+'</li>');
+    if (!parts.length) return '<div class="as-empty">일정 없음</div>';
+    return '<ul class="as-items">'+parts.join('')+'</ul>';
+  }
+  function dayCard(dt, today){
+    var isT = dt.getTime()===today.getTime();
+    return '<div class="as-day'+(isT?' today':'')+'">'+
+      '<div class="as-dhead"><span class="as-dname">'+['일','월','화','수','목','금','토'][dt.getDay()]+'</span>'+
+      '<span class="as-ddate">'+(dt.getMonth()+1)+'/'+dt.getDate()+'</span></div>'+
+      dayItemsHtml(dt)+'</div>';
+  }
+  function weekGrid(monday, today){
+    var h='<div class="as-grid">';
+    for (var d=0; d<5; d++) h += dayCard(addDays(monday,d), today);
+    return h+'</div>';
+  }
+  function mondayOf(d){ var x=midnight(d); var g=x.getDay(); return addDays(x, g===0?-6:1-g); }
+
+  function render(){
+    var lab=$('#scopeLabel'), view=$('#view');
+    $('#state').hidden=true;
+    // 기준 '오늘' — 달력 데이터 연도로 맞춤(진도표는 해당 학년도 고정)
+    var now=new Date();
+    var today=midnight(new Date(YEAR, now.getMonth(), now.getDate()));
+
+    if (scope==='month'){
+      var mo=today.getMonth();
+      // 이번 달에 월요일이 드는 주들
+      var first=new Date(YEAR,mo,1), mon=mondayOf(first);
+      var weeks=[];
+      while (mon.getMonth()<=mo || (mon.getFullYear()===YEAR && mon.getMonth()===mo)){
+        if (mon.getMonth()===mo) weeks.push(new Date(mon));
+        mon=addDays(mon,7);
+        if (mon.getMonth()>mo && mon.getDate()>7) break;
+      }
+      lab.innerHTML='이번 달 <b>'+(mo+1)+'월</b> · '+weeks.length+'주';
+      view.innerHTML=weeks.map(function(wm){
+        var fri=addDays(wm,4);
+        var nowWk = today>=wm && today<=addDays(wm,6);
+        return '<div class="as-wk'+(nowWk?' now':'')+'">'+
+          '<p class="as-wklabel">'+(wm.getMonth()+1)+'/'+wm.getDate()+' - '+(fri.getMonth()+1)+'/'+fri.getDate()+'</p>'+
+          weekGrid(wm, today)+'</div>';
+      }).join('');
+    } else {
+      var m0=mondayOf(today), f0=addDays(m0,4);
+      lab.innerHTML='이번 주 <b>'+(m0.getMonth()+1)+'/'+m0.getDate()+' - '+(f0.getMonth()+1)+'/'+f0.getDate()+'</b>';
+      view.innerHTML=weekGrid(m0, today);
+    }
+    lab.hidden=false; view.hidden=false; $('#noteBox').hidden=false; $('#foot').hidden=false;
+    $('#foot').textContent='학교 문해력 진도표 달력에서 만든 일정입니다.';
+    setTimeout(postHeight,30);
+  }
+
+  function syncTabs(){ [].forEach.call(document.querySelectorAll('.as-tab'),function(b){ b.classList.toggle('on', b.dataset.scope===scope); }); }
+  function showError(msg){ $('#view').hidden=true; $('#scopeLabel').hidden=true; var e=$('#state'); e.hidden=false; e.className='as-state error'; e.textContent=msg; setTimeout(postHeight,30); }
+
+  function start(){
+    syncTabs();
+    fetch('munhae.json', { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(j){
+      YEAR=j.year; MAP={}; (j.days||[]).forEach(function(x){ MAP[x.md]=x; });
+      render();
+    }).catch(function(e){ showError('문해력 일정을 불러오지 못했습니다.\n'+e.message); });
+  }
+
+  document.querySelector('.as-tabs').addEventListener('click', function(e){
+    var b=e.target.closest('.as-tab'); if(!b||b.dataset.scope===scope) return;
+    scope=b.dataset.scope; try{ localStorage.setItem('gbgc.mh.scope',scope); }catch(e2){}
+    syncTabs(); render();
+  });
+
+  start();
+</script>
+</body>
+</html>

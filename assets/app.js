@@ -5,7 +5,8 @@
   var API = (window.HUB_CONFIG && window.HUB_CONFIG.apiUrl || '').trim();
   var NL = String.fromCharCode(10);
   var LS = { token: 'gbgc.token', fav: 'gbgc.fav', theme: 'gbgc.theme', cal: 'gbgc.cal',
-             name: 'gbgc.name', remember: 'gbgc.remember' };
+             name: 'gbgc.name', remember: 'gbgc.remember',
+             asOpen: 'gbgc.asOpen', mhOpen: 'gbgc.mhOpen' };
 
   var state = {
     links: [], depts: [], config: {}, me: null, users: [],
@@ -716,6 +717,43 @@
   }
 
   // 보기 전환 · 숨기기
+  /* 방과후 · 문해력 일정 — 캘린더처럼 그 자리에서 보이기/숨기기.
+     이미 만든 페이지(afterschool.html / munhae.html)를 iframe 으로 그대로 품습니다. */
+  var EMBED = {
+    as: { wrap: 'asWrap', frame: 'asFrame', src: 'afterschool.html?embed=1', key: LS.asOpen },
+    mh: { wrap: 'mhWrap', frame: 'mhFrame', src: 'munhae.html?embed=1',       key: LS.mhOpen }
+  };
+
+  function setEmbed(which, open) {
+    var m = EMBED[which]; if (!m) return;
+    var wrap = $('#' + m.wrap), frame = $('#' + m.frame);
+    var btn = document.querySelector('[data-embed="' + which + '"]');
+    if (open && !frame.getAttribute('src')) frame.setAttribute('src', m.src);  // 처음 열 때만 로드
+    wrap.hidden = !open;
+    if (btn) {
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.querySelector('.eb-act').textContent = open ? '숨기기' : '보기';
+      btn.classList.toggle('on', open);
+    }
+    store(m.key, open ? '1' : null);
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-embed]');
+    if (!t) return;
+    var which = t.dataset.embed;
+    setEmbed(which, $('#' + EMBED[which].wrap).hidden);   // 현재 숨김이면 열기
+  });
+
+  // iframe 이 자기 키에 맞춰 보낸 높이로 맞춰, 캘린더처럼 내용만큼 늘어나게 합니다.
+  window.addEventListener('message', function (e) {
+    var d = e.data || {};
+    if (d && d.type === 'embedHeight' && d.id) {
+      var f = document.getElementById(d.id);
+      if (f) f.style.height = Math.max(120, d.h | 0) + 'px';
+    }
+  });
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-cal]');
     if (!b) return;
@@ -1680,6 +1718,10 @@
     store(LS.theme, next);
     applyTheme(next);
   });
+
+  // 지난번에 펼쳐 뒀으면 그대로 다시 펼칩니다.
+  if (store(LS.asOpen) === '1') setEmbed('as', true);
+  if (store(LS.mhOpen) === '1') setEmbed('mh', true);
 
   // 시작
   bootstrap();

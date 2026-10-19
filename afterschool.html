@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="assets/app.css">
 <style>
   .as-wrap { max-width: 960px; margin: 0 auto; padding: 18px 16px 48px; }
+  body.embed .as-wrap { padding: 2px 2px 8px; }
+  body.embed .as-top, body.embed h1 { display: none; }
   .as-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
   .as-back {
     text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 600;
@@ -76,6 +78,8 @@
 <body>
 <script>
   try { var t = localStorage.getItem('gbgc.theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  var EMBED = location.search.indexOf('embed=1') >= 0;
+  if (EMBED) document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('embed'); });
 </script>
 
 <main class="as-wrap">
@@ -122,6 +126,13 @@
     }).join('') + '</div>';
   }
 
+  function postHeight() {
+    if (!EMBED) return;
+    try {
+      var h = document.querySelector('.as-wrap').getBoundingClientRect().height + 10;
+      parent.postMessage({ type: 'embedHeight', id: 'asFrame', h: Math.ceil(h) }, '*');
+    } catch (e) {}
+  }
   function render(d) {
     $('#state').hidden = true;
     var lab = $('#scopeLabel'), view = $('#view');
@@ -146,11 +157,13 @@
     if (d.note) { $('#note').textContent = d.note; $('#noteBox').hidden = false; }
     $('#foot').textContent = '학교 방과후학교 시트에서 자동으로 불러옵니다. (갱신: ' + (d.updated || '') + ')';
     $('#foot').hidden = false;
+    setTimeout(postHeight, 30);
   }
 
   function showError(msg) {
     $('#view').hidden = true; $('#scopeLabel').hidden = true;
     var el = $('#state'); el.hidden = false; el.className = 'as-state error'; el.textContent = msg;
+    setTimeout(postHeight, 30);
   }
 
   function syncTabs() {

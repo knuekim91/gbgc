@@ -973,3 +973,21 @@ input:focus, select:focus, textarea:focus {
 .afterschool-link .as-ico { font-size: 20px; line-height: 1; }
 .afterschool-link .as-txt { flex: 1; font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -.2px; }
 .afterschool-link .as-go { font-size: 22px; color: var(--accent); font-weight: 700; }
+
+/* 방과후·문해력 일정 — 캘린더처럼 그 자리에서 펼치는 띠 + iframe */
+.embedbar { margin: 10px 0 0; }
+.embedtoggle {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 12px 15px; cursor: pointer; text-align: left;
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 12px; box-shadow: var(--shadow); font: inherit;
+  transition: background .14s, border-color .14s;
+}
+.embedtoggle:hover { background: color-mix(in srgb, var(--accent) 15%, var(--panel)); border-color: var(--accent); }
+.embedtoggle.on { border-color: var(--accent); }
+.embedtoggle .eb-ico { font-size: 19px; line-height: 1; }
+.embedtoggle .eb-txt { flex: 1; font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -.2px; }
+.embedtoggle .eb-act { font-size: 13px; font-weight: 700; color: var(--accent); }
+.embedwrap { margin-top: 8px; }
+.embedframe { width: 100%; border: 0; display: block; height: 320px; overflow: hidden; }
