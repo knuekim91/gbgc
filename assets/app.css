@@ -975,19 +975,24 @@ input:focus, select:focus, textarea:focus {
 .afterschool-link .as-go { font-size: 22px; color: var(--accent); font-weight: 700; }
 
 /* 방과후·문해력 일정 — 캘린더처럼 그 자리에서 펼치는 띠 + iframe */
-.embedbar { margin: 10px 0 0; }
+/* 방과후·문해력 두 띠를 한 줄에 나란히. 글자 크기는 아래 '캘린더 보기'와 맞췄습니다. */
+.embedrow { display: flex; gap: 10px; margin-top: 12px; }
+.embedbar { flex: 1 1 0; min-width: 0; margin: 0; }
 .embedtoggle {
-  width: 100%; display: flex; align-items: center; gap: 10px;
-  padding: 12px 15px; cursor: pointer; text-align: left;
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px; cursor: pointer; text-align: left;
   background: color-mix(in srgb, var(--accent) 9%, var(--panel));
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
-  border-radius: 12px; box-shadow: var(--shadow); font: inherit;
+  border-radius: 11px; box-shadow: var(--shadow); font: inherit;
   transition: background .14s, border-color .14s;
 }
 .embedtoggle:hover { background: color-mix(in srgb, var(--accent) 15%, var(--panel)); border-color: var(--accent); }
 .embedtoggle.on { border-color: var(--accent); }
-.embedtoggle .eb-ico { font-size: 19px; line-height: 1; }
-.embedtoggle .eb-txt { flex: 1; font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -.2px; }
-.embedtoggle .eb-act { font-size: 13px; font-weight: 700; color: var(--accent); }
+.embedtoggle .eb-ico { font-size: 15px; line-height: 1; }
+.embedtoggle .eb-txt { flex: 1; font-size: 13px; font-weight: 600; color: var(--ink-2); letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.embedtoggle.on .eb-txt { color: var(--ink); }
+.embedtoggle .eb-act { font-size: 12.5px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
 .embedwrap { margin-top: 8px; }
+/* 폭이 좁으면 두 줄로 */
+@media (max-width: 560px) { .embedrow { flex-direction: column; gap: 8px; } }
 .embedframe { width: 100%; border: 0; display: block; height: 320px; overflow: hidden; }

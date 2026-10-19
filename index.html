@@ -51,23 +51,24 @@
   </p>
   <div id="state" class="state">불러오는 중…</div>
 
-  <div class="embedbar" id="asBar" hidden>
-    <button type="button" class="embedtoggle" data-embed="as" aria-expanded="false" aria-controls="asWrap">
-      <span class="eb-ico" aria-hidden="true">📅</span>
-      <span class="eb-txt">방과후 일정</span>
-      <span class="eb-act">보기</span>
-    </button>
+  <div class="embedrow" id="embedRow" hidden>
+    <div class="embedbar" id="asBar">
+      <button type="button" class="embedtoggle" data-embed="as" aria-expanded="false" aria-controls="asWrap">
+        <span class="eb-ico" aria-hidden="true">📅</span>
+        <span class="eb-txt">방과후 일정</span>
+        <span class="eb-act">보기</span>
+      </button>
+    </div>
+    <div class="embedbar" id="mhBar">
+      <button type="button" class="embedtoggle" data-embed="mh" aria-expanded="false" aria-controls="mhWrap">
+        <span class="eb-ico" aria-hidden="true">📖</span>
+        <span class="eb-txt">문해력 일정</span>
+        <span class="eb-act">보기</span>
+      </button>
+    </div>
   </div>
   <div class="embedwrap" id="asWrap" hidden>
     <iframe class="embedframe" id="asFrame" title="방과후 일정"></iframe>
-  </div>
-
-  <div class="embedbar" id="mhBar" hidden>
-    <button type="button" class="embedtoggle" data-embed="mh" aria-expanded="false" aria-controls="mhWrap">
-      <span class="eb-ico" aria-hidden="true">📖</span>
-      <span class="eb-txt">문해력 일정</span>
-      <span class="eb-act">보기</span>
-    </button>
   </div>
   <div class="embedwrap" id="mhWrap" hidden>
     <iframe class="embedframe" id="mhFrame" title="문해력 일정"></iframe>

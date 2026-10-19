@@ -728,8 +728,7 @@
   function revealEmbeds() {
     if (embedsShown) return;
     embedsShown = true;
-    $('#asBar').hidden = false;
-    $('#mhBar').hidden = false;
+    $('#embedRow').hidden = false;
     if (store(LS.asOpen) === '1') setEmbed('as', true);
     if (store(LS.mhOpen) === '1') setEmbed('mh', true);
   }
