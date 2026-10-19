@@ -724,6 +724,16 @@
     mh: { wrap: 'mhWrap', frame: 'mhFrame', src: 'munhae.html?embed=1',       key: LS.mhOpen }
   };
 
+  var embedsShown = false;
+  function revealEmbeds() {
+    if (embedsShown) return;
+    embedsShown = true;
+    $('#asBar').hidden = false;
+    $('#mhBar').hidden = false;
+    if (store(LS.asOpen) === '1') setEmbed('as', true);
+    if (store(LS.mhOpen) === '1') setEmbed('mh', true);
+  }
+
   function setEmbed(which, open) {
     var m = EMBED[which]; if (!m) return;
     var wrap = $('#' + m.wrap), frame = $('#' + m.frame);
@@ -795,6 +805,7 @@
       el.className = 'state error';
       el.hidden = false;
       el.textContent = '데이터를 불러오지 못했습니다.\n' + e.message;
+      revealEmbeds();
     });
   }
 
@@ -804,6 +815,8 @@
    * 같은 내용을 담아 보내 두 번 부르지 않게 했습니다.
    */
   function applyBoot(d) {
+    // 보드가 준비되면 방과후·문해력 띠를 보여 줍니다(로딩 중 덩그러니 뜨지 않게).
+    revealEmbeds();
       state.links = d.links || [];
       state.depts = d.depts || [];
       state.config = d.config || {};
@@ -1718,10 +1731,6 @@
     store(LS.theme, next);
     applyTheme(next);
   });
-
-  // 지난번에 펼쳐 뒀으면 그대로 다시 펼칩니다.
-  if (store(LS.asOpen) === '1') setEmbed('as', true);
-  if (store(LS.mhOpen) === '1') setEmbed('mh', true);
 
   // 시작
   bootstrap();

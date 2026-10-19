@@ -988,7 +988,12 @@ function actAfterschool(req) {
   try {
     res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
   } catch (e) {
-    return { ok: false, error: '시트를 불러오지 못했습니다.' };
+    var msg = String(e && e.message ? e.message : e);
+    // 외부 연결 권한이 아직 승인되지 않은 경우를 알기 쉽게 안내합니다.
+    if (/permission|authoriz|권한/i.test(msg)) {
+      msg = '관리자 승인이 필요합니다. 스크립트 편집기에서 actAfterschool 을 한 번 실행해 "외부 서비스 연결"을 허용해 주세요.';
+    }
+    return { ok: false, error: msg };
   }
   if (res.getResponseCode() !== 200) {
     return { ok: false, error: '시트를 불러오지 못했습니다 (' + res.getResponseCode() + ')' };
