@@ -5,40 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>방과후 일정</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📅</text></svg>">
-<!-- 허브와 같은 색·테마를 쓰려고 app.css 를 그대로 가져옵니다. -->
 <link rel="stylesheet" href="assets/app.css">
 <style>
   .as-wrap { max-width: 960px; margin: 0 auto; padding: 18px 16px 48px; }
   body.embed .as-wrap { padding: 2px 2px 8px; }
   body.embed .as-top, body.embed h1 { display: none; }
   .as-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
-  .as-back {
-    text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 600;
-    border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; background: var(--panel);
-  }
-  .as-back:hover { border-color: var(--ink-3); }
+  .as-back { text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; background: var(--panel); }
   .as-wrap h1 { font-size: 20px; margin: 10px 0 12px; letter-spacing: -.3px; }
 
-  /* 이번주 / 이번달 토글 */
-  .as-tabs { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 16px; }
-  .as-tab {
-    border: 0; background: none; cursor: pointer; font: inherit; font-size: 14px; font-weight: 700;
-    color: var(--ink-2); padding: 7px 18px; border-radius: 999px; transition: background .14s, color .14s;
-  }
+  .as-tabs { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 14px; }
+  .as-tab { border: 0; background: none; cursor: pointer; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink-2); padding: 7px 18px; border-radius: 999px; }
   .as-tab.on { background: var(--accent); color: #fff; }
-  .as-tab:not(.on):hover { color: var(--ink); }
 
-  .as-scopelabel { color: var(--ink-2); font-size: 14px; font-weight: 600; margin: 0 0 14px; }
+  .as-scopelabel { color: var(--ink-2); font-size: 14px; font-weight: 600; margin: 0 0 12px; }
   .as-scopelabel b { color: var(--accent); }
-
-  .as-state { color: var(--ink-3); padding: 30px 4px; font-size: 14px; }
+  .as-state { color: var(--ink-3); padding: 24px 4px; font-size: 14px; }
   .as-state.error { color: var(--danger); white-space: pre-line; }
 
   .as-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-  .as-day {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-height: 130px;
-  }
+  .as-day { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-height: 120px; }
   .as-dhead { padding: 9px 10px; border-bottom: 1px solid var(--line-2); display: flex; align-items: baseline; gap: 7px; }
   .as-dname { font-weight: 800; font-size: 15px; }
   .as-ddate { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
@@ -47,18 +33,11 @@
   .as-day.today .as-dname { color: var(--accent); }
 
   .as-items { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .as-items li {
-    background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--accent);
-    border-radius: 8px; padding: 7px 9px; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35;
-  }
+  .as-items li { background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--accent); border-radius: 8px; padding: 7px 9px; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35; }
   .as-empty { color: var(--ink-3); font-size: 12.5px; padding: 10px 9px; }
 
-  /* 이번달: 주 블록 반복 */
   .as-wk { margin-bottom: 18px; }
-  .as-wklabel {
-    font-size: 14px; font-weight: 800; color: var(--ink-2); margin: 0 0 8px; padding-left: 2px;
-    display: flex; align-items: center; gap: 8px;
-  }
+  .as-wklabel { font-size: 14px; font-weight: 800; color: var(--ink-2); margin: 0 0 8px; padding-left: 2px; display: flex; align-items: center; gap: 8px; }
   .as-wk.now .as-wklabel { color: var(--accent); }
   .as-wk.now .as-wklabel::after { content: '이번 주'; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 2px 8px; }
 
@@ -103,17 +82,80 @@
   <p class="as-foot" id="foot" hidden></p>
 </main>
 
-<script src="config.js"></script>
 <script>
   var $ = function (s) { return document.querySelector(s); };
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-  var API = (window.HUB_CONFIG && window.HUB_CONFIG.apiUrl) || '';
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   var scope = 'week';
   try { if (localStorage.getItem('gbgc.as.scope') === 'month') scope = 'month'; } catch (e) {}
+
+  // 학교 방과후학교 시트(공개 네이티브 구글시트)를 브라우저에서 직접 읽습니다.
+  // CORS 가 허용되어 서버(Apps Script)·권한 승인이 전혀 필요 없습니다.
+  var SHEET_ID = '1BcvH-vnXmT1xOdROCEC18t3JRUJ3unJo3YWWZOfCxx8';
+  var GID = '970771263';
+  var CSV_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + GID;
+  var GRID = null;
+  var NL = String.fromCharCode(10), CR = String.fromCharCode(13);
+
+  function parseCSV(s) {
+    var rows = [], row = [], cur = '', q = false;
+    for (var i = 0; i < s.length; i++) {
+      var c = s[i];
+      if (q) {
+        if (c === '"') { if (s[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += c;
+      } else {
+        if (c === '"') q = true;
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === NL) { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else if (c === CR) { /* skip */ }
+        else cur += c;
+      }
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+  function midnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addD(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+
+  function buildData(sc) {
+    var g = GRID, hr = -1;
+    for (var i = 0; i < g.length; i++) { if (g[i][2] === '월' && g[i][3] === '화') { hr = i; break; } }
+    if (hr < 0) throw new Error('요일 표를 찾지 못했습니다.');
+    var year = new Date().getFullYear();
+    var weeks = [];
+    for (var r = hr + 1; r < g.length; r++) {
+      var label = String(g[r][1] || '').replace(/\s+/g, ' ').trim();
+      var m = /^(\d{1,2})\.(\d{1,2})/.exec(label);
+      if (!m) continue;
+      weeks.push({ row: r, label: label, mon: new Date(year, (+m[1]) - 1, +m[2]) });
+    }
+    if (!weeks.length) throw new Error('주차 표를 찾지 못했습니다.');
+    var today = midnight(new Date());
+    function sameWeek(mon) { return today >= mon && today <= addD(mon, 6); }
+    function days(wk) {
+      var names = ['월', '화', '수', '목', '금'], out = [];
+      for (var d = 0; d < 5; d++) {
+        var cell = String(g[wk.row][2 + d] || '');
+        var items = cell.split(/[\n,]/).map(function (x) { return x.trim(); }).filter(function (x) { return x && x !== '-'; });
+        var dt = addD(wk.mon, d);
+        out.push({ name: names[d], date: (dt.getMonth() + 1) + '/' + dt.getDate(), isToday: dt.getTime() === today.getTime(), items: items });
+      }
+      return out;
+    }
+    var note = String((g[0] && g[0][1]) || '').replace(/\r/g, '').trim();
+    if (sc === 'month') {
+      var mo = today.getMonth();
+      var list = weeks.filter(function (w) { return w.mon.getMonth() === mo; });
+      return { scope: 'month', month: mo + 1, note: note,
+        weeks: list.map(function (w) { return { label: w.label, days: days(w), isThisWeek: sameWeek(w.mon) }; }) };
+    }
+    var pick = null;
+    for (var k = 0; k < weeks.length; k++) { if (sameWeek(weeks[k].mon)) { pick = weeks[k]; break; } }
+    if (!pick) { for (var k2 = 0; k2 < weeks.length; k2++) { if (weeks[k2].mon <= today && (!pick || weeks[k2].mon > pick.mon)) pick = weeks[k2]; } }
+    if (!pick) pick = weeks[0];
+    return { scope: 'week', week: pick.label, days: days(pick), note: note };
+  }
 
   function dayCardsHtml(days) {
     return '<div class="as-grid">' + days.map(function (day) {
@@ -129,33 +171,29 @@
   function postHeight() {
     if (!EMBED) return;
     try {
-      var h = document.querySelector('.as-wrap').getBoundingClientRect().height + 10;
+      var h = $('.as-wrap').getBoundingClientRect().height + 10;
       parent.postMessage({ type: 'embedHeight', id: 'asFrame', h: Math.ceil(h) }, '*');
     } catch (e) {}
   }
+
   function render(d) {
     $('#state').hidden = true;
     var lab = $('#scopeLabel'), view = $('#view');
-
     if (d.scope === 'month') {
       lab.innerHTML = '이번 달 <b>' + esc(d.month) + '월</b> · ' + d.weeks.length + '주';
-      if (!d.weeks.length) {
-        view.innerHTML = '<div class="as-empty">이번 달 일정이 없습니다.</div>';
-      } else {
-        view.innerHTML = d.weeks.map(function (w) {
-          return '<div class="as-wk' + (w.isThisWeek ? ' now' : '') + '">' +
-            '<p class="as-wklabel">' + esc(w.label) + '</p>' + dayCardsHtml(w.days) + '</div>';
-        }).join('');
-      }
+      view.innerHTML = d.weeks.length
+        ? d.weeks.map(function (w) {
+            return '<div class="as-wk' + (w.isThisWeek ? ' now' : '') + '">' +
+              '<p class="as-wklabel">' + esc(w.label) + '</p>' + dayCardsHtml(w.days) + '</div>';
+          }).join('')
+        : '<div class="as-empty">이번 달 일정이 없습니다.</div>';
     } else {
       lab.innerHTML = '이번 주 <b>' + esc(d.week) + '</b>';
       view.innerHTML = dayCardsHtml(d.days);
     }
-    lab.hidden = false;
-    view.hidden = false;
-
+    lab.hidden = false; view.hidden = false;
     if (d.note) { $('#note').textContent = d.note; $('#noteBox').hidden = false; }
-    $('#foot').textContent = '학교 방과후학교 시트에서 자동으로 불러옵니다. (갱신: ' + (d.updated || '') + ')';
+    $('#foot').textContent = '학교 방과후학교 시트에서 자동으로 불러옵니다.';
     $('#foot').hidden = false;
     setTimeout(postHeight, 30);
   }
@@ -167,37 +205,27 @@
   }
 
   function syncTabs() {
-    [].forEach.call(document.querySelectorAll('.as-tab'), function (b) {
-      b.classList.toggle('on', b.dataset.scope === scope);
-    });
+    [].forEach.call(document.querySelectorAll('.as-tab'), function (b) { b.classList.toggle('on', b.dataset.scope === scope); });
   }
-
+  function renderScope() {
+    syncTabs();
+    try { render(buildData(scope)); } catch (e) { showError('일정을 불러오지 못했습니다.' + NL + e.message); }
+  }
   function load() {
     syncTabs();
-    if (!API) { showError('설정(config.js)에서 주소를 찾지 못했습니다.'); return; }
     $('#state').hidden = false; $('#state').className = 'as-state'; $('#state').textContent = '불러오는 중…';
     $('#view').hidden = true;
-    fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'afterschool', scope: scope }),
-      redirect: 'follow'
-    })
-      .then(function (r) { return r.text(); })
-      .then(function (t) {
-        var d; try { d = JSON.parse(t); } catch (e) { throw new Error('응답을 읽지 못했습니다.'); }
-        if (!d.ok) throw new Error(d.error || '일정을 불러오지 못했습니다.');
-        render(d);
-      })
-      .catch(function (e) { showError('일정을 불러오지 못했습니다.\n' + e.message + '\n잠시 후 새로고침해 주세요.'); });
+    fetch(CSV_URL, { redirect: 'follow' })
+      .then(function (r) { if (!r.ok) throw new Error('시트 응답 ' + r.status); return r.text(); })
+      .then(function (txt) { GRID = parseCSV(txt); renderScope(); })
+      .catch(function (e) { showError('일정을 불러오지 못했습니다.' + NL + e.message + NL + '잠시 후 새로고침해 주세요.'); });
   }
 
   document.querySelector('.as-tabs').addEventListener('click', function (e) {
-    var b = e.target.closest('.as-tab'); if (!b) return;
-    if (b.dataset.scope === scope) return;
+    var b = e.target.closest('.as-tab'); if (!b || b.dataset.scope === scope) return;
     scope = b.dataset.scope;
     try { localStorage.setItem('gbgc.as.scope', scope); } catch (e2) {}
-    load();
+    if (GRID) renderScope(); else load();
   });
 
   load();
