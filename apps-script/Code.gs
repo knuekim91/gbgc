@@ -1020,11 +1020,41 @@ function actAfterschool(req) {
   var ts = Utilities.formatDate(new Date(), tz(), 'yyyy-MM-dd').split('-');
   var today = new Date(Number(ts[0]), Number(ts[1]) - 1, Number(ts[2]));
 
-  // 이번 주: 월~월+6 안에 오늘이 드는 행. 없으면 오늘 이하 중 가장 최근 주.
+  var names = ['월', '화', '수', '목', '금'];
+  function buildDays(wk) {
+    var out = [];
+    for (var d = 0; d < 5; d++) {
+      var cell = String(grid[wk.row][2 + d] || '');
+      var items = cell.split(/[\n,]/).map(function (x) { return x.trim(); })
+                      .filter(function (x) { return x && x !== '-'; });
+      var dt = new Date(wk.mon.getFullYear(), wk.mon.getMonth(), wk.mon.getDate() + d);
+      out.push({
+        name: names[d],
+        date: (dt.getMonth() + 1) + '/' + dt.getDate(),
+        isToday: dt.getTime() === today.getTime(),
+        items: items
+      });
+    }
+    return out;
+  }
+
+  var note = String(grid[0] && grid[0][1] || '').replace(/\r/g, '').trim();  // 상단 시간 안내
+  var scope = (req && String(req.scope) === 'month') ? 'month' : 'week';
+
+  if (scope === 'month') {
+    // 이번 달 = 그 주의 월요일이 이번 달에 드는 주들
+    var mon = today.getMonth() + 1;
+    var list = weeks.filter(function (w) { return (w.mon.getMonth() + 1) === mon; });
+    var wks = list.map(function (w) {
+      return { label: w.label, days: buildDays(w), isThisWeek: isSameWeek(w.mon, today) };
+    });
+    return { ok: true, scope: 'month', month: mon, weeks: wks, note: note, updated: now() };
+  }
+
+  // 이번 주: 월~월+6 안에 오늘이 드는 주. 없으면 오늘 이하 중 가장 최근 주.
   var pick = null;
   for (var k = 0; k < weeks.length; k++) {
-    var s = weeks[k].mon, e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
-    if (today >= s && today <= e) { pick = weeks[k]; break; }
+    if (isSameWeek(weeks[k].mon, today)) { pick = weeks[k]; break; }
   }
   if (!pick) {
     for (var k2 = 0; k2 < weeks.length; k2++) {
@@ -1032,24 +1062,13 @@ function actAfterschool(req) {
     }
   }
   if (!pick) pick = weeks[0];
+  return { ok: true, scope: 'week', week: pick.label, days: buildDays(pick), note: note, updated: now() };
+}
 
-  var names = ['월', '화', '수', '목', '금'];
-  var days = [];
-  for (var d = 0; d < 5; d++) {
-    var cell = String(grid[pick.row][2 + d] || '');
-    var items = cell.split(/[\n,]/).map(function (x) { return x.trim(); })
-                    .filter(function (x) { return x && x !== '-'; });
-    var dt = new Date(pick.mon.getFullYear(), pick.mon.getMonth(), pick.mon.getDate() + d);
-    days.push({
-      name: names[d],
-      date: (dt.getMonth() + 1) + '/' + dt.getDate(),
-      isToday: dt.getTime() === today.getTime(),
-      items: items
-    });
-  }
-
-  var note = String(grid[0] && grid[0][1] || '').replace(/\r/g, '').trim();  // 상단 시간 안내
-  return { ok: true, week: pick.label, days: days, note: note, updated: now() };
+/** 그 주(월~월+6) 안에 기준일이 드는가 */
+function isSameWeek(mondayDate, dayDate) {
+  var e = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + 6);
+  return dayDate >= mondayDate && dayDate <= e;
 }
 
 /* ===================== 토큰 / 해시 ===================== */
