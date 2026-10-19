@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이번주 방과후 일정</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📅</text></svg>">
+<!-- 허브와 같은 색·테마를 쓰려고 app.css 를 그대로 가져옵니다. -->
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* 깜빡임 없이 저장된 테마를 먼저 입힙니다. */
+  .as-wrap { max-width: 920px; margin: 0 auto; padding: 18px 16px 48px; }
+  .as-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .as-back {
+    text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 600;
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; background: var(--panel);
+  }
+  .as-back:hover { border-color: var(--ink-3); }
+  .as-wrap h1 { font-size: 20px; margin: 10px 0 2px; letter-spacing: -.3px; }
+  .as-week { color: var(--ink-2); font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  .as-week b { color: var(--accent); }
+
+  .as-state { color: var(--ink-3); padding: 30px 4px; font-size: 14px; }
+  .as-state.error { color: var(--danger); white-space: pre-line; }
+
+  .as-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .as-day {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-height: 140px;
+  }
+  .as-dhead {
+    padding: 9px 10px; border-bottom: 1px solid var(--line-2);
+    display: flex; align-items: baseline; gap: 7px;
+  }
+  .as-dname { font-weight: 800; font-size: 15px; }
+  .as-ddate { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .as-day.today { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .as-day.today .as-dhead { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .as-day.today .as-dname { color: var(--accent); }
+  .as-day.sun .as-dname { color: #d0433a; }
+
+  .as-items { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .as-items li {
+    background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 7px 9px; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35;
+  }
+  .as-empty { color: var(--ink-3); font-size: 12.5px; padding: 10px 9px; }
+
+  .as-note { margin-top: 20px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px 16px; }
+  .as-note h2 { font-size: 14px; margin: 0 0 8px; color: var(--ink-2); }
+  .as-note pre {
+    margin: 0; font: inherit; font-size: 13px; color: var(--ink); white-space: pre-wrap; word-break: break-word; line-height: 1.6;
+  }
+  .as-foot { margin-top: 18px; color: var(--ink-3); font-size: 11.5px; }
+  .as-foot a { color: var(--ink-3); }
+
+  @media (max-width: 720px) {
+    .as-grid { grid-template-columns: 1fr; }
+    .as-day { min-height: 0; }
+    .as-items { flex-direction: row; flex-wrap: wrap; }
+    .as-items li { flex: 0 0 auto; }
+  }
+</style>
+</head>
+<body>
+<script>
+  // 허브에서 고른 테마(라이트/다크)를 그대로 따릅니다.
+  try {
+    var t = localStorage.getItem('gbgc.theme');
+    if (t) document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+</script>
+
+<main class="as-wrap">
+  <div class="as-top">
+    <a class="as-back" href="./">← 업무 허브로</a>
+  </div>
+  <h1>📅 이번주 방과후 일정</h1>
+  <div class="as-week" id="week"></div>
+
+  <div id="state" class="as-state">불러오는 중…</div>
+  <section id="grid" class="as-grid" hidden aria-label="이번주 방과후 일정"></section>
+
+  <section id="noteBox" class="as-note" hidden>
+    <h2>운영 시간 안내</h2>
+    <pre id="note"></pre>
+  </section>
+
+  <p class="as-foot" id="foot" hidden></p>
+</main>
+
+<script src="config.js"></script>
+<script>
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  var API = (window.HUB_CONFIG && window.HUB_CONFIG.apiUrl) || '';
+
+  function showError(msg) {
+    var el = $('#state');
+    el.hidden = false; el.className = 'as-state error';
+    el.textContent = msg;
+  }
+
+  function render(d) {
+    $('#state').hidden = true;
+    $('#week').innerHTML = '이번 주 <b>' + esc(d.week) + '</b>';
+
+    var dayCls = ['', '', '', '', ''];
+    var html = d.days.map(function (day, i) {
+      var items = (day.items && day.items.length)
+        ? '<ul class="as-items">' + day.items.map(function (x) {
+            return '<li>' + esc(x) + '</li>';
+          }).join('') + '</ul>'
+        : '<div class="as-empty">일정 없음</div>';
+      return '<div class="as-day' + (day.isToday ? ' today' : '') + '">' +
+        '<div class="as-dhead"><span class="as-dname">' + esc(day.name) + '</span>' +
+          '<span class="as-ddate">' + esc(day.date) + '</span></div>' +
+        items +
+      '</div>';
+    }).join('');
+    $('#grid').innerHTML = html;
+    $('#grid').hidden = false;
+
+    if (d.note) {
+      $('#note').textContent = d.note;
+      $('#noteBox').hidden = false;
+    }
+    $('#foot').textContent = '학교 방과후학교 시트에서 자동으로 불러옵니다. (갱신: ' + (d.updated || '') + ')';
+    $('#foot').hidden = false;
+  }
+
+  function load() {
+    if (!API) { showError('설정(config.js)에서 주소를 찾지 못했습니다.'); return; }
+    // 허브와 같은 방식: text/plain POST (사전요청 없이 바로 도달)
+    fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'afterschool' }),
+      redirect: 'follow'
+    })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        var d;
+        try { d = JSON.parse(t); } catch (e) { throw new Error('응답을 읽지 못했습니다.'); }
+        if (!d.ok) throw new Error(d.error || '일정을 불러오지 못했습니다.');
+        render(d);
+      })
+      .catch(function (e) {
+        showError('일정을 불러오지 못했습니다.\n' + e.message + '\n잠시 후 새로고침해 주세요.');
+      });
+  }
+  load();
+</script>
+</body>
+</html>

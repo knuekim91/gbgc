@@ -957,3 +957,19 @@ input:focus, select:focus, textarea:focus {
 .remember > input { width: 16px; height: 16px; margin: 0; flex: 0 0 auto; }
 .remember > span { user-select: none; }
 .remember-hint { margin: 3px 0 0 24px; }
+
+/* 이번주 방과후 일정 진입 버튼 — 눌러서 별도 페이지로 */
+.afterschool-link {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 0 2px; padding: 12px 15px;
+  text-decoration: none; cursor: pointer;
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 12px; box-shadow: var(--shadow);
+  transition: background .14s, border-color .14s, transform .06s;
+}
+.afterschool-link:hover { background: color-mix(in srgb, var(--accent) 15%, var(--panel)); border-color: var(--accent); }
+.afterschool-link:active { transform: translateY(1px); }
+.afterschool-link .as-ico { font-size: 20px; line-height: 1; }
+.afterschool-link .as-txt { flex: 1; font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -.2px; }
+.afterschool-link .as-go { font-size: 22px; color: var(--accent); font-weight: 700; }

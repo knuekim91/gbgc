@@ -80,6 +80,7 @@ function handle(req) {
       case 'saveNotice':     return json(actSaveNotice(req));
       case 'dailyPosts':     return json(actDailyPosts(req));
       case 'weeklyPosts':    return json(actWeeklyPosts(req));
+      case 'afterschool':    return json(actAfterschool(req));
       default:               return json({ ok: false, error: '알 수 없는 요청: ' + action });
     }
   } catch (err) {
@@ -970,6 +971,85 @@ function actWeeklyPosts(req) {
   var rest = rows.length - shown;
   var msg = header + NL + lines.join(NL) + (rest > 0 ? NL + '…외 ' + rest + '건' : '');
   return { status: 'ok', from: cutoffStr, to: todayStr, count: rows.length, message: msg };
+}
+
+/* ===================== 이번주 방과후 일정 ===================== */
+
+// 방과후 일정은 허브와 별개의 외부 시트(공개)에 있습니다. 서버에서 읽어
+// 이번 주 월~금만 뽑아 넘깁니다. 브라우저가 직접 읽으면 CORS에 막히므로
+// 여기서 대신 받아 옵니다.
+var AFTERSCHOOL_SHEET_ID = '1BNR9Qbo3nyQUVy1oiLscWS2LHnb3N1A7';
+var AFTERSCHOOL_GID = '970771263';
+
+function actAfterschool(req) {
+  var url = 'https://docs.google.com/spreadsheets/d/' + AFTERSCHOOL_SHEET_ID +
+            '/gviz/tq?tqx=out:csv&gid=' + AFTERSCHOOL_GID;
+  var res;
+  try {
+    res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  } catch (e) {
+    return { ok: false, error: '시트를 불러오지 못했습니다.' };
+  }
+  if (res.getResponseCode() !== 200) {
+    return { ok: false, error: '시트를 불러오지 못했습니다 (' + res.getResponseCode() + ')' };
+  }
+
+  var grid = Utilities.parseCsv(res.getContentText('UTF-8'));   // 따옴표·줄바꿈 자동 처리
+
+  // 요일 머리글 행: 2번째 칸이 '월', 3번째가 '화'
+  var hr = -1;
+  for (var i = 0; i < grid.length; i++) {
+    if (grid[i][2] === '월' && grid[i][3] === '화') { hr = i; break; }
+  }
+  if (hr < 0) return { ok: false, error: '요일 표를 찾지 못했습니다.' };
+
+  var year = Number(Utilities.formatDate(new Date(), tz(), 'yyyy'));
+  function mkDate(mon, day) { return new Date(year, mon - 1, day); }
+
+  // 주차 행 모으기 (col1 이 "M.D - M.D")
+  var weeks = [];
+  for (var r = hr + 1; r < grid.length; r++) {
+    var label = String(grid[r][1] || '').replace(/\s+/g, ' ').trim();
+    var m = /^(\d{1,2})\.(\d{1,2})/.exec(label);
+    if (!m) continue;
+    weeks.push({ row: r, label: label, mon: mkDate(Number(m[1]), Number(m[2])) });
+  }
+  if (!weeks.length) return { ok: false, error: '주차 표를 찾지 못했습니다.' };
+
+  // 오늘(서울) 자정
+  var ts = Utilities.formatDate(new Date(), tz(), 'yyyy-MM-dd').split('-');
+  var today = new Date(Number(ts[0]), Number(ts[1]) - 1, Number(ts[2]));
+
+  // 이번 주: 월~월+6 안에 오늘이 드는 행. 없으면 오늘 이하 중 가장 최근 주.
+  var pick = null;
+  for (var k = 0; k < weeks.length; k++) {
+    var s = weeks[k].mon, e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+    if (today >= s && today <= e) { pick = weeks[k]; break; }
+  }
+  if (!pick) {
+    for (var k2 = 0; k2 < weeks.length; k2++) {
+      if (weeks[k2].mon <= today && (!pick || weeks[k2].mon > pick.mon)) pick = weeks[k2];
+    }
+  }
+  if (!pick) pick = weeks[0];
+
+  var names = ['월', '화', '수', '목', '금'];
+  var days = [];
+  for (var d = 0; d < 5; d++) {
+    var cell = String(grid[pick.row][2 + d] || '');
+    var items = cell.split(/[\n,]/).map(function (x) { return x.trim(); })
+                    .filter(function (x) { return x && x !== '-'; });
+    var dt = new Date(pick.mon.getFullYear(), pick.mon.getMonth(), pick.mon.getDate() + d);
+    days.push({
+      name: names[d],
+      date: (dt.getMonth() + 1) + '/' + dt.getDate(),
+      isToday: dt.getTime() === today.getTime(),
+      items: items
+    });
+  }
+
+  var note = String(grid[0] && grid[0][1] || '').replace(/\r/g, '').trim();  // 상단 시간 안내
+  return { ok: true, week: pick.label, days: days, note: note, updated: now() };
 }
 
 /* ===================== 토큰 / 해시 ===================== */
