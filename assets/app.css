@@ -99,7 +99,34 @@ code {
   backdrop-filter: saturate(1.6) blur(10px);
   border-bottom: 1px solid var(--line);
   padding-top: max(10px, env(safe-area-inset-top));
+  overflow: hidden;
 }
+
+/* 헤더 뒤 은은한 오로라 글로우(AnimatedWebs 기법) — 강조색 blob이 느리게 흐릅니다. */
+.aurora { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.aurora-blob { position: absolute; border-radius: 50%; filter: blur(58px); will-change: transform; }
+.aurora .b1 { width: 260px; height: 260px; top: -145px; left: 7%;  opacity: .18;
+  background: radial-gradient(circle at 30% 30%, var(--accent), transparent 70%);
+  animation: aurora-drift 13s ease-in-out infinite alternate; }
+.aurora .b2 { width: 220px; height: 220px; top: -135px; right: 15%; opacity: .14;
+  background: radial-gradient(circle at 70% 30%, var(--accent), transparent 70%);
+  animation: aurora-drift 17s ease-in-out infinite alternate-reverse; }
+.aurora .b3 { width: 200px; height: 200px; top: -120px; left: 46%; opacity: .11;
+  background: radial-gradient(circle at 50% 50%, var(--accent), transparent 70%);
+  animation: aurora-drift 21s ease-in-out infinite alternate; }
+/* 어두운 화면에서는 글로우를 조금 더 또렷하게. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .aurora .b1 { opacity: .30; }
+  :root:not([data-theme="light"]) .aurora .b2 { opacity: .24; }
+  :root:not([data-theme="light"]) .aurora .b3 { opacity: .18; }
+}
+:root[data-theme="dark"] .aurora .b1 { opacity: .30; }
+:root[data-theme="dark"] .aurora .b2 { opacity: .24; }
+:root[data-theme="dark"] .aurora .b3 { opacity: .18; }
+@keyframes aurora-drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(36px, 26px) scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .aurora-blob { animation: none; } }
+/* 헤더 내용은 글로우 위로 */
+.topbar-inner, .topbar .searchrow, .topbar .chips { position: relative; z-index: 1; }
 
 .topbar-inner {
   display: flex; align-items: center; justify-content: space-between;
