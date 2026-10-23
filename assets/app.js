@@ -605,13 +605,15 @@
 
     var today = midnight(new Date());
 
-    // 걸러 놓은 목록을 '마감일' 기준으로 그날 카드에 모읍니다(여러 날 업무는 기간 꼬리표).
+    // 걸러 놓은 목록을 그날 카드에 모읍니다. 여러 날 업무는 시작~마감 사이 '모든 날'에 표시합니다.
     var byDay = {};                     // ymd → [업무...]
     visibleLinks().forEach(function (l) {
       var r = evRange(l);
       if (!r) return;
-      var k = ymdKey(r.e);
-      (byDay[k] = byDay[k] || []).push(l);
+      for (var d = new Date(r.s); d <= r.e; d = addDays(d, 1)) {
+        var k = ymdKey(d);
+        (byDay[k] = byDay[k] || []).push(l);
+      }
     });
 
     // 보여 줄 주(일요일 시작)들과 머리말을 정합니다.
