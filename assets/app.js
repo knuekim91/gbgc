@@ -6,12 +6,12 @@
   var NL = String.fromCharCode(10);
   var LS = { token: 'gbgc.token', fav: 'gbgc.fav', theme: 'gbgc.theme', cal: 'gbgc.cal',
              name: 'gbgc.name', remember: 'gbgc.remember',
-             asOpen: 'gbgc.asOpen', mhOpen: 'gbgc.mhOpen' };
+             asOpen: 'gbgc.asOpen', mhOpen: 'gbgc.mhOpen', openView: 'gbgc.openView' };
 
   var state = {
     links: [], depts: [], config: {}, me: null, users: [],
     progress: {}, open: [], filter: 'all', q: '',
-    cal: store('gbgc.cal') || ''      // '' | '2' | '4' — 캘린더 보기 상태
+    cal: ''                           // '' | '2' | '4' — 펼침 복원은 LS.openView 로
   };
 
   var $  = function (s, r) { return (r || document).querySelector(s); };
@@ -603,7 +603,6 @@
 
   function renderCalendar() {
     var weeks = Number(state.cal) || 0;
-    $('#calBar').hidden = !!weeks;
     $('#calendar').hidden = !weeks;
     if (!weeks) return;
 
@@ -636,9 +635,9 @@
       '<div class="cal-head">' +
         '<div class="cal-title">📅 업무 캘린더 <span class="cal-span">' + span + '</span></div>' +
         '<div class="cal-tools">' +
-          '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-cal="2">2주</button>' +
-          '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-cal="4">4주</button>' +
-          '<button type="button" class="linklike" data-cal="">캘린더 숨기기</button>' +
+          '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-view="cal" data-scope="week">주</button>' +
+          '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-view="cal" data-scope="month">월</button>' +
+          '<button type="button" class="linklike" data-view="cal" data-scope="hide">숨기기</button>' +
         '</div>' +
       '</div>';
 
@@ -716,70 +715,73 @@
     $('#calendar').innerHTML = head + names + '<div class="cal-grid">' + rows + '</div>';
   }
 
-  // 보기 전환 · 숨기기
-  /* 방과후 · 문해력 일정 — 캘린더처럼 그 자리에서 보이기/숨기기.
-     이미 만든 페이지(afterschool.html / munhae.html)를 iframe 으로 그대로 품습니다. */
+  // ── 방과후 · 문해력 · 업무 캘린더: 한 줄에 두고 모두 '주/월'. 하나만 펼쳐지며,
+  //    같은 버튼을 다시 누르면 접힌다. (afterschool/munhae 는 iframe 으로 품는다)
   var EMBED = {
-    as: { wrap: 'asWrap', frame: 'asFrame', src: 'afterschool.html?embed=1', key: LS.asOpen },
-    mh: { wrap: 'mhWrap', frame: 'mhFrame', src: 'munhae.html?embed=1',       key: LS.mhOpen }
+    as: { wrap: 'asWrap', frame: 'asFrame', page: 'afterschool.html' },
+    mh: { wrap: 'mhWrap', frame: 'mhFrame', page: 'munhae.html' }
   };
+  var CUR = { view: null, scope: null };
+
+  function hideEmbed(which) { $('#' + EMBED[which].wrap).hidden = true; }
+  function openEmbed(which, scope) {
+    var m = EMBED[which], frame = $('#' + m.frame);
+    if (!frame.getAttribute('src')) frame.setAttribute('src', m.page + '?embed=1&scope=' + scope);
+    else if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'setScope', scope: scope }, '*');
+    $('#' + m.wrap).hidden = false;
+  }
+  function closeCalendar() { if (state.cal) { state.cal = ''; renderCalendar(); } }
+
+  function syncBars() {
+    $$('.vpk').forEach(function (b) {
+      b.classList.toggle('on', CUR.view === b.dataset.view && CUR.scope === b.dataset.scope);
+    });
+  }
+  function closeAllViews() {
+    hideEmbed('as'); hideEmbed('mh'); closeCalendar();
+    CUR = { view: null, scope: null };
+    store(LS.openView, null);
+    syncBars();
+  }
+  function openView(which, scope) {
+    hideEmbed('as'); hideEmbed('mh');
+    if (which !== 'cal') closeCalendar();
+    if (which === 'cal') { state.cal = scope === 'month' ? '4' : '2'; renderCalendar(); }
+    else openEmbed(which, scope);
+    CUR = { view: which, scope: scope };
+    store(LS.openView, which + ':' + scope);
+    syncBars();
+  }
 
   var embedsShown = false;
   function revealEmbeds() {
     if (embedsShown) return;
     embedsShown = true;
     $('#embedRow').hidden = false;
-    // 셋 중 하나만: 저장된 상태 중 하나만 펼치고 나머지는 접습니다.
-    if (store(LS.asOpen) === '1') { setEmbed('as', true); setEmbed('mh', false); closeCalendar(); }
-    else if (store(LS.mhOpen) === '1') { setEmbed('mh', true); closeCalendar(); }
-  }
-
-  function setEmbed(which, open) {
-    var m = EMBED[which]; if (!m) return;
-    var wrap = $('#' + m.wrap), frame = $('#' + m.frame);
-    var btn = document.querySelector('[data-embed="' + which + '"]');
-    if (open && !frame.getAttribute('src')) frame.setAttribute('src', m.src);  // 처음 열 때만 로드
-    wrap.hidden = !open;
-    if (btn) {
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      btn.querySelector('.eb-act').textContent = open ? '숨기기' : '보기';
-      btn.classList.toggle('on', open);
+    var ov = store(LS.openView);
+    if (ov) {
+      var p = ov.split(':');
+      if (EMBED[p[0]] || p[0] === 'cal') openView(p[0], p[1] === 'month' ? 'month' : 'week');
     }
-    store(m.key, open ? '1' : null);
   }
 
-  // 방과후·문해력·캘린더는 셋 중 하나만 열립니다. 하나를 열면 나머지는 접습니다.
-  function closeCalendar() {
-    if (state.cal) { state.cal = ''; store(LS.cal, null); renderCalendar(); }
-  }
+  // 주/월 버튼(바 + 캘린더 머리말). 머리말의 '숨기기'는 data-scope=hide.
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-embed]');
-    if (!t) return;
-    var which = t.dataset.embed;
-    var opening = $('#' + EMBED[which].wrap).hidden;   // 지금 숨김이면 여는 중
-    if (opening) {
-      setEmbed(which === 'as' ? 'mh' : 'as', false);
-      closeCalendar();
-    }
-    setEmbed(which, opening);
+    var b = e.target.closest('.vpk, [data-view][data-scope]');
+    if (!b || !b.dataset.view) return;
+    var which = b.dataset.view, scope = b.dataset.scope;
+    if (scope === 'hide') { closeAllViews(); return; }
+    if (CUR.view === which && CUR.scope === scope) closeAllViews();
+    else openView(which, scope);
   });
 
-  // iframe 이 자기 키에 맞춰 보낸 높이로 맞춰, 캘린더처럼 내용만큼 늘어나게 합니다.
+  // iframe 이 보낸 높이로 맞춰, 내용만큼 늘어나게 합니다.
   window.addEventListener('message', function (e) {
     var d = e.data || {};
     if (d && d.type === 'embedHeight' && d.id) {
       var f = document.getElementById(d.id);
       if (f) f.style.height = Math.max(120, d.h | 0) + 'px';
     }
-  });
-
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-cal]');
-    if (!b) return;
-    state.cal = b.dataset.cal;
-    store(LS.cal, state.cal || null);
-    if (state.cal) { setEmbed('as', false); setEmbed('mh', false); }   // 캘린더 열면 나머지 접기
-    renderCalendar();
   });
 
   // 일정에서 업무로 이동

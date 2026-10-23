@@ -51,20 +51,27 @@
   </p>
   <div id="state" class="state">불러오는 중…</div>
 
-  <div class="embedrow" id="embedRow" hidden>
-    <div class="embedbar" id="asBar">
-      <button type="button" class="embedtoggle" data-embed="as" aria-expanded="false" aria-controls="asWrap">
-        <span class="eb-ico" aria-hidden="true">📅</span>
-        <span class="eb-txt">방과후 일정</span>
-        <span class="eb-act">보기</span>
-      </button>
+  <div class="viewrow" id="embedRow" hidden>
+    <div class="vbar">
+      <span class="v-ico" aria-hidden="true">📅</span><span class="v-name">방과후 일정</span>
+      <span class="v-picks">
+        <button type="button" class="vpk" data-view="as" data-scope="week">주</button>
+        <button type="button" class="vpk" data-view="as" data-scope="month">월</button>
+      </span>
     </div>
-    <div class="embedbar" id="mhBar">
-      <button type="button" class="embedtoggle" data-embed="mh" aria-expanded="false" aria-controls="mhWrap">
-        <span class="eb-ico" aria-hidden="true">📖</span>
-        <span class="eb-txt">문해력 일정</span>
-        <span class="eb-act">보기</span>
-      </button>
+    <div class="vbar">
+      <span class="v-ico" aria-hidden="true">📖</span><span class="v-name">문해력 일정</span>
+      <span class="v-picks">
+        <button type="button" class="vpk" data-view="mh" data-scope="week">주</button>
+        <button type="button" class="vpk" data-view="mh" data-scope="month">월</button>
+      </span>
+    </div>
+    <div class="vbar">
+      <span class="v-ico" aria-hidden="true">📅</span><span class="v-name">업무 캘린더</span>
+      <span class="v-picks">
+        <button type="button" class="vpk" data-view="cal" data-scope="week">주</button>
+        <button type="button" class="vpk" data-view="cal" data-scope="month">월</button>
+      </span>
     </div>
   </div>
   <div class="embedwrap" id="asWrap" hidden>
@@ -72,12 +79,6 @@
   </div>
   <div class="embedwrap" id="mhWrap" hidden>
     <iframe class="embedframe" id="mhFrame" title="문해력 일정"></iframe>
-  </div>
-
-  <div id="calBar" class="calbar" hidden>
-    <span class="calbar-label">📅 업무 캘린더</span>
-    <button type="button" class="calpick" data-cal="2">2주</button>
-    <button type="button" class="calpick" data-cal="4">4주</button>
   </div>
   <section id="calendar" class="calendar" hidden aria-label="업무 캘린더"></section>
 

@@ -9,7 +9,7 @@
 <style>
   .as-wrap { max-width: 960px; margin: 0 auto; padding: 18px 16px 48px; }
   body.embed .as-wrap { padding: 2px 2px 8px; }
-  body.embed .as-top, body.embed h1 { display: none; }
+  body.embed .as-top, body.embed h1, body.embed .as-tabs { display: none; }
   .as-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
   .as-back { text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; background: var(--panel); }
   .as-wrap h1 { font-size: 20px; margin: 10px 0 12px; letter-spacing: -.3px; }
@@ -87,7 +87,9 @@
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   var scope = 'week';
-  try { if (localStorage.getItem('gbgc.as.scope') === 'month') scope = 'month'; } catch (e) {}
+  var _ps = new URLSearchParams(location.search).get('scope');
+  if (_ps === 'month' || _ps === 'week') scope = _ps;
+  else { try { if (localStorage.getItem('gbgc.as.scope') === 'month') scope = 'month'; } catch (e) {} }
 
   // 학교 방과후학교 시트(공개 네이티브 구글시트)를 브라우저에서 직접 읽습니다.
   // CORS 가 허용되어 서버(Apps Script)·권한 승인이 전혀 필요 없습니다.
@@ -226,6 +228,14 @@
     scope = b.dataset.scope;
     try { localStorage.setItem('gbgc.as.scope', scope); } catch (e2) {}
     if (GRID) renderScope(); else load();
+  });
+
+  window.addEventListener('message', function (e) {
+    var d = e.data || {};
+    if (d && d.type === 'setScope' && (d.scope === 'week' || d.scope === 'month')) {
+      scope = d.scope;
+      if (GRID) renderScope(); else load();
+    }
   });
 
   load();
