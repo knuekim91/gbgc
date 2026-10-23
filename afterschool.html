@@ -86,6 +86,7 @@
   <div class="as-tabs" role="tablist">
     <button type="button" class="as-tab" data-scope="week">이번주</button>
     <button type="button" class="as-tab" data-scope="month">이번달</button>
+    <button type="button" class="as-tab" data-scope="next">다음달</button>
   </div>
 
   <p class="as-scopelabel" id="scopeLabel" hidden></p>
@@ -110,7 +111,7 @@
 
   var scope = 'week';
   var _ps = new URLSearchParams(location.search).get('scope');
-  if (_ps === 'month' || _ps === 'week') scope = _ps;
+  if (_ps === 'month' || _ps === 'week' || _ps === 'next') scope = _ps;
   else { try { if (localStorage.getItem('gbgc.as.scope') === 'month') scope = 'month'; } catch (e) {} }
 
   // 학교 방과후학교 시트(공개 네이티브 구글시트)를 브라우저에서 직접 읽습니다.
@@ -202,10 +203,11 @@
       return out;
     }
     var note = String((g[0] && g[0][1]) || '').replace(/\r/g, '').trim();
-    if (sc === 'month') {
-      var mo = today.getMonth();
+    if (sc === 'month' || sc === 'next') {
+      var baseMo = today.getMonth() + (sc === 'next' ? 1 : 0);
+      var mo = ((baseMo % 12) + 12) % 12;
       var list = weeks.filter(function (w) { return w.mon.getMonth() === mo; });
-      return { scope: 'month', month: mo + 1, note: note,
+      return { scope: 'month', next: sc === 'next', month: mo + 1, note: note,
         weeks: list.map(function (w) { return { label: w.label, days: days(w), isThisWeek: sameWeek(w.mon) }; }) };
     }
     var pick = null;
@@ -267,13 +269,13 @@
     $('#state').hidden = true;
     var lab = $('#scopeLabel'), view = $('#view');
     if (d.scope === 'month') {
-      lab.innerHTML = '이번 달 <b>' + esc(d.month) + '월</b> · ' + d.weeks.length + '주';
+      lab.innerHTML = (d.next ? '다음 달 ' : '이번 달 ') + '<b>' + esc(d.month) + '월</b> · ' + d.weeks.length + '주';
       view.innerHTML = d.weeks.length
         ? d.weeks.map(function (w) {
             return '<div class="as-wk' + (w.isThisWeek ? ' now' : '') + '">' +
               '<p class="as-wklabel">' + esc(w.label) + '</p>' + dayCardsHtml(w.days) + '</div>';
           }).join('')
-        : '<div class="as-empty">이번 달 일정이 없습니다.</div>';
+        : '<div class="as-empty">' + (d.next ? '다음 달' : '이번 달') + ' 일정이 없습니다.</div>';
     } else {
       lab.innerHTML = '이번 주 <b>' + esc(d.week) + '</b>';
       view.innerHTML = dayCardsHtml(d.days);
@@ -331,7 +333,7 @@
 
   window.addEventListener('message', function (e) {
     var d = e.data || {};
-    if (d && d.type === 'setScope' && (d.scope === 'week' || d.scope === 'month')) {
+    if (d && d.type === 'setScope' && (d.scope === 'week' || d.scope === 'month' || d.scope === 'next')) {
       scope = d.scope;
       if (GRID) renderScope(); else load();
     }

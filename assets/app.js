@@ -598,120 +598,75 @@
     return deadlineTag(l.deadline);
   }
 
-  var DAY_MS = 24 * 3600 * 1000;
-  function dayDiff(a, b) { return Math.round((a - b) / DAY_MS); }
-
   function renderCalendar() {
-    var weeks = Number(state.cal) || 0;
-    $('#calendar').hidden = !weeks;
-    if (!weeks) return;
+    var sc = state.cal;                 // '' | 'week' | 'month' | 'next'
+    $('#calendar').hidden = !sc;
+    if (!sc) return;
 
-    var narrow = window.matchMedia('(max-width: 720px)').matches;
-    var M = ({
-      2: narrow ? { baseH: 86, headH: 18, barH: 14, gap: 2 } : { baseH: 112, headH: 22, barH: 17, gap: 3 },
-      4: narrow ? { baseH: 64, headH: 16, barH: 13, gap: 2 } : { baseH: 82,  headH: 20, barH: 15, gap: 2 }
-    })[weeks];
-
-    // 이번 주 일요일부터 시작합니다.
     var today = midnight(new Date());
-    var start = addDays(today, -today.getDay());
-    var days = weeks * 7;
-    var gridEnd = addDays(start, days - 1);
 
-    // 지금 걸러 놓은 목록 중 이 기간과 겹치는 일정만 모읍니다.
-    var events = [];
+    // 걸러 놓은 목록을 '마감일' 기준으로 그날 카드에 모읍니다(여러 날 업무는 기간 꼬리표).
+    var byDay = {};                     // ymd → [업무...]
     visibleLinks().forEach(function (l) {
       var r = evRange(l);
       if (!r) return;
-      if (r.e < start || r.s > gridEnd) return;
-      events.push({ s: r.s, e: r.e, l: l });
+      var k = ymdKey(r.e);
+      (byDay[k] = byDay[k] || []).push(l);
     });
 
-    var last = gridEnd;
-    var span = (start.getMonth() + 1) + '월 ' + start.getDate() + '일 – ' +
-               (last.getMonth() + 1) + '월 ' + last.getDate() + '일';
+    // 보여 줄 주(일요일 시작)들과 머리말을 정합니다.
+    var weeksArr = [], title, inMonth = null;
+    if (sc === 'week') {
+      var ws = addDays(today, -today.getDay());
+      weeksArr.push(ws);
+      var we = addDays(ws, 6);
+      title = (ws.getMonth() + 1) + '/' + ws.getDate() + ' – ' + (we.getMonth() + 1) + '/' + we.getDate();
+    } else {
+      var baseMo = today.getMonth() + (sc === 'next' ? 1 : 0);
+      var mo = ((baseMo % 12) + 12) % 12;
+      var yr = today.getFullYear() + Math.floor(baseMo / 12);
+      inMonth = mo;
+      var first = new Date(yr, mo, 1), mend = new Date(yr, mo + 1, 0);
+      for (var d0 = addDays(first, -first.getDay()); d0 <= mend; d0 = addDays(d0, 7)) weeksArr.push(new Date(d0));
+      title = (sc === 'next' ? '다음 달 ' : '이번 달 ') + (mo + 1) + '월';
+    }
 
     var head =
       '<div class="cal-head">' +
-        '<div class="cal-title">📅 업무 캘린더 <span class="cal-span">' + span + '</span></div>' +
+        '<div class="cal-title">📅 업무 캘린더 <span class="cal-span">' + title + '</span></div>' +
         '<div class="cal-tools">' +
-          '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-view="cal" data-scope="week">2주</button>' +
-          '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-view="cal" data-scope="month">4주</button>' +
+          '<button type="button" class="calpick' + (sc === 'week' ? ' on' : '') + '" data-view="cal" data-scope="week">주</button>' +
+          '<button type="button" class="calpick' + (sc === 'month' ? ' on' : '') + '" data-view="cal" data-scope="month">월</button>' +
+          '<button type="button" class="calpick' + (sc === 'next' ? ' on' : '') + '" data-view="cal" data-scope="next">다음달</button>' +
         '</div>' +
       '</div>';
 
-    var names = '<div class="cal-week">' + WEEKDAY.map(function (w, i) {
-      return '<div class="cal-wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '') + '">' + w + '</div>';
-    }).join('') + '</div>';
-
-    var rows = '';
-    for (var w = 0; w < weeks; w++) {
-      var wStart = addDays(start, w * 7);
-      var wEnd = addDays(start, w * 7 + 6);
-
-      // 이 주에 걸치는 구간을 칸(0~6)으로 자릅니다.
-      var segs = [];
-      events.forEach(function (ev) {
-        if (ev.e < wStart || ev.s > wEnd) return;
-        segs.push({
-          c1: Math.max(0, dayDiff(ev.s, wStart)),
-          c2: Math.min(6, dayDiff(ev.e, wStart)),
-          l: ev.l,
-          isStart: ev.s >= wStart,
-          isEnd: ev.e <= wEnd
-        });
-      });
-
-      // 겹치지 않게 줄(lane)을 배정합니다. 한 일정은 모든 날에서 같은 줄에 놓여
-      // 쭉 이어진 띠로 보입니다.
-      segs.sort(function (a, b) { return a.c1 - b.c1 || (b.c2 - b.c1) - (a.c2 - a.c1); });
-      var laneEnd = [];
-      segs.forEach(function (sg) {
-        var ln = 0;
-        while (ln < laneEnd.length && laneEnd[ln] >= sg.c1) ln++;
-        sg.lane = ln;
-        laneEnd[ln] = sg.c2;
-      });
-      var lanes = laneEnd.length;
-      var need = Math.max(M.baseH, M.headH + lanes * (M.barH + M.gap) + 6);
-
-      // 날짜 칸 7개
-      var dates = '';
+    var rows = weeksArr.map(function (ws) {
+      var cards = '';
       for (var i = 0; i < 7; i++) {
-        var d = addDays(wStart, i);
-        var isToday = d.getTime() === today.getTime();
+        var d = addDays(ws, i);
         var dow = d.getDay();
-        dates += '<div class="cal-day' + (isToday ? ' today' : '') + (d < today ? ' past' : '') + '">' +
-          '<div class="cal-date' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') + '">' +
-            (d.getDate() === 1 ? (d.getMonth() + 1) + '/' : '') + d.getDate() +
-          '</div>' +
-        '</div>';
+        var out = inMonth !== null && d.getMonth() !== inMonth;
+        var isToday = d.getTime() === today.getTime();
+        var list = byDay[ymdKey(d)] || [];
+        var items = list.length
+          ? '<ul class="cal-dc-list">' + list.map(function (l) {
+              return '<li><button type="button" class="cal-dc-ev" data-goto="' + esc(l.id) +
+                '" style="--dept:' + deptColor(l.dept) + '" title="' + esc(l.dept + ' · ' + l.title) + '">' +
+                '<span class="cal-dc-t">' + esc(l.title) + '</span>' + dateTag(l) + '</button></li>';
+            }).join('') + '</ul>'
+          : '';
+        cards += '<div class="cal-dc' + (isToday ? ' today' : '') + (out ? ' out' : '') + (list.length ? '' : ' empty') + '">' +
+          '<div class="cal-dc-head">' +
+            '<span class="cal-dc-name' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') + '">' + WEEKDAY[dow] + '</span>' +
+            '<span class="cal-dc-date">' + (d.getMonth() + 1) + '/' + d.getDate() + '</span>' +
+          '</div>' + items + '</div>';
       }
+      return '<div class="cal-drow">' + cards + '</div>';
+    }).join('');
 
-      // 일정 띠 — 칸을 가로질러 하나로 이어집니다.
-      var bars = segs.map(function (sg) {
-        var l = sg.l;
-        var r = evRange(l);
-        var range = (l.start && l.deadline && l.start !== l.deadline)
-          ? ' · ' + mdSlash(l.start) + '~' + mdSlash(l.deadline) : '';
-        return '<button type="button" class="cal-ev' +
-          (sg.isStart ? '' : ' cut-l') + (sg.isEnd ? '' : ' cut-r') + '"' +
-          ' data-goto="' + esc(l.id) + '"' +
-          ' style="--dept:' + deptColor(l.dept) + ';grid-column:' + (sg.c1 + 1) + '/' + (sg.c2 + 2) +
-            ';grid-row:' + (sg.lane + 1) + '"' +
-          ' title="' + esc(l.dept + ' · ' + l.title + range) + '">' +
-          (sg.isStart || sg.c1 === 0 ? esc(l.title) : '') + '</button>';
-      }).join('');
-
-      rows += '<div class="cal-wrow" style="--need:' + need + 'px;--headH:' + M.headH +
-        'px;--barH:' + M.barH + 'px;--barGap:' + M.gap + 'px">' +
-        '<div class="cal-dates">' + dates + '</div>' +
-        '<div class="cal-bars">' + bars + '</div>' +
-      '</div>';
-    }
-
-    $('#calendar').className = 'calendar w' + weeks;
-    $('#calendar').innerHTML = head + names + '<div class="cal-grid">' + rows + '</div>';
+    $('#calendar').className = 'calendar cards';
+    $('#calendar').innerHTML = head + rows;
   }
 
   // ── 방과후 · 문해력 · 업무 캘린더: 한 줄에 두고 모두 '주/월'. 하나만 펼쳐지며,
@@ -745,7 +700,7 @@
   function openView(which, scope) {
     hideEmbed('as'); hideEmbed('mh');
     if (which !== 'cal') closeCalendar();
-    if (which === 'cal') { state.cal = scope === 'month' ? '4' : '2'; renderCalendar(); }
+    if (which === 'cal') { state.cal = scope; renderCalendar(); }
     else openEmbed(which, scope);
     CUR = { view: which, scope: scope };
     store(LS.openView, which + ':' + scope);
@@ -760,7 +715,8 @@
     var ov = store(LS.openView);
     if (ov) {
       var p = ov.split(':');
-      if (EMBED[p[0]] || p[0] === 'cal') openView(p[0], p[1] === 'month' ? 'month' : 'week');
+      var s2 = (p[1] === 'month' || p[1] === 'next') ? p[1] : 'week';
+      if (EMBED[p[0]] || p[0] === 'cal') openView(p[0], s2);
     }
   }
 

@@ -70,6 +70,7 @@
   <div class="as-tabs" role="tablist">
     <button type="button" class="as-tab" data-scope="week">이번주</button>
     <button type="button" class="as-tab" data-scope="month">이번달</button>
+    <button type="button" class="as-tab" data-scope="next">다음달</button>
   </div>
 
   <p class="as-scopelabel" id="scopeLabel" hidden></p>
@@ -88,7 +89,7 @@
 
   var scope = 'week';
   var _ps = new URLSearchParams(location.search).get('scope');
-  if (_ps === 'month' || _ps === 'week') scope = _ps;
+  if (_ps === 'month' || _ps === 'week' || _ps === 'next') scope = _ps;
   else { try { if (localStorage.getItem('gbgc.mh.scope') === 'month') scope = 'month'; } catch (e) {} }
 
   var MAP = null, YEAR = null;
@@ -140,17 +141,18 @@
     var now=new Date();
     var today=midnight(new Date(YEAR, now.getMonth(), now.getDate()));
 
-    if (scope==='month'){
-      var mo=today.getMonth();
-      // 이번 달에 월요일이 드는 주들
-      var first=new Date(YEAR,mo,1), mon=mondayOf(first);
+    if (scope==='month' || scope==='next'){
+      var baseMo=today.getMonth()+(scope==='next'?1:0);
+      var yr=YEAR+Math.floor(baseMo/12);
+      var mo=((baseMo%12)+12)%12;
+      // 대상 달에 월요일이 드는 주들
+      var mend=new Date(yr,mo+1,0), mon=mondayOf(new Date(yr,mo,1));
       var weeks=[];
-      while (mon.getMonth()<=mo || (mon.getFullYear()===YEAR && mon.getMonth()===mo)){
-        if (mon.getMonth()===mo) weeks.push(new Date(mon));
+      while (mon<=mend){
+        if (mon.getFullYear()===yr && mon.getMonth()===mo) weeks.push(new Date(mon));
         mon=addDays(mon,7);
-        if (mon.getMonth()>mo && mon.getDate()>7) break;
       }
-      lab.innerHTML='이번 달 <b>'+(mo+1)+'월</b> · '+weeks.length+'주';
+      lab.innerHTML=(scope==='next'?'다음 달 ':'이번 달 ')+'<b>'+(mo+1)+'월</b> · '+weeks.length+'주';
       view.innerHTML=weeks.map(function(wm){
         var fri=addDays(wm,4);
         var nowWk = today>=wm && today<=addDays(wm,6);
@@ -187,7 +189,7 @@
 
   window.addEventListener('message', function (e) {
     var d = e.data || {};
-    if (d && d.type === 'setScope' && (d.scope === 'week' || d.scope === 'month')) {
+    if (d && d.type === 'setScope' && (d.scope === 'week' || d.scope === 'month' || d.scope === 'next')) {
       scope = d.scope; syncTabs();
       if (MAP) render(); else start();
     }
