@@ -665,7 +665,7 @@
       return '<div class="cal-drow">' + cards + '</div>';
     }).join('');
 
-    $('#calendar').className = 'calendar cards';
+    $('#calendar').className = 'calendar cards open';
     $('#calendar').innerHTML = head + rows;
   }
 
@@ -690,6 +690,15 @@
     $$('.vpk').forEach(function (b) {
       b.classList.toggle('on', CUR.view === b.dataset.view && CUR.scope === b.dataset.scope);
     });
+    // 펼쳐진 바와 그 아래 패널을 '연결선'으로 이어 주기 위한 표시.
+    $$('.vbar').forEach(function (v) { v.classList.remove('open'); });
+    if (CUR.view) {
+      var btn = $('.vpk[data-view="' + CUR.view + '"]');
+      var bar = btn && btn.closest('.vbar');
+      if (bar) bar.classList.add('open');
+    }
+    $('#asWrap').classList.toggle('open', CUR.view === 'as');
+    $('#mhWrap').classList.toggle('open', CUR.view === 'mh');
   }
   function closeAllViews() {
     hideEmbed('as'); hideEmbed('mh'); closeCalendar();
