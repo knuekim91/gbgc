@@ -634,7 +634,7 @@
 
     var head =
       '<div class="cal-head">' +
-        '<div class="cal-title">📅 일정 캘린더 <span class="cal-span">' + span + '</span></div>' +
+        '<div class="cal-title">📅 업무 캘린더 <span class="cal-span">' + span + '</span></div>' +
         '<div class="cal-tools">' +
           '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-cal="2">2주</button>' +
           '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-cal="4">4주</button>' +
@@ -729,8 +729,9 @@
     if (embedsShown) return;
     embedsShown = true;
     $('#embedRow').hidden = false;
-    if (store(LS.asOpen) === '1') setEmbed('as', true);
-    if (store(LS.mhOpen) === '1') setEmbed('mh', true);
+    // 셋 중 하나만: 저장된 상태 중 하나만 펼치고 나머지는 접습니다.
+    if (store(LS.asOpen) === '1') { setEmbed('as', true); setEmbed('mh', false); closeCalendar(); }
+    else if (store(LS.mhOpen) === '1') { setEmbed('mh', true); closeCalendar(); }
   }
 
   function setEmbed(which, open) {
@@ -747,11 +748,20 @@
     store(m.key, open ? '1' : null);
   }
 
+  // 방과후·문해력·캘린더는 셋 중 하나만 열립니다. 하나를 열면 나머지는 접습니다.
+  function closeCalendar() {
+    if (state.cal) { state.cal = ''; store(LS.cal, null); renderCalendar(); }
+  }
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-embed]');
     if (!t) return;
     var which = t.dataset.embed;
-    setEmbed(which, $('#' + EMBED[which].wrap).hidden);   // 현재 숨김이면 열기
+    var opening = $('#' + EMBED[which].wrap).hidden;   // 지금 숨김이면 여는 중
+    if (opening) {
+      setEmbed(which === 'as' ? 'mh' : 'as', false);
+      closeCalendar();
+    }
+    setEmbed(which, opening);
   });
 
   // iframe 이 자기 키에 맞춰 보낸 높이로 맞춰, 캘린더처럼 내용만큼 늘어나게 합니다.
@@ -768,6 +778,7 @@
     if (!b) return;
     state.cal = b.dataset.cal;
     store(LS.cal, state.cal || null);
+    if (state.cal) { setEmbed('as', false); setEmbed('mh', false); }   // 캘린더 열면 나머지 접기
     renderCalendar();
   });
 
