@@ -292,10 +292,17 @@ code {
   border-radius: 9px; padding: 7px 14px;
   border: 1px solid var(--line);
   background: var(--panel); color: var(--ink);
-  transition: filter .14s, border-color .14s;
+  transition: filter .14s, border-color .14s, transform .14s ease, box-shadow .14s ease;
 }
 .btn:hover { filter: brightness(.97); }
-.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+/* 주요 버튼 — 은은한 그라데이션 + 눌리기 전 살짝 떠오르는 느낌. */
+.btn-primary {
+  color: var(--accent-ink); border-color: transparent;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 86%, #fff), var(--accent));
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.btn-primary:hover { filter: none; transform: translateY(-1px); box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--accent) 75%, transparent); }
+.btn-primary:active { transform: translateY(0); }
 .btn-ghost { background: none; }
 .btn-danger { color: var(--danger); }
 
@@ -348,8 +355,8 @@ code {
   border-radius: 999px; padding: 4px 13px;
   transition: background .14s, color .14s, border-color .14s;
 }
-.calpick:hover { border-color: var(--accent); color: var(--accent); }
-.calpick.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.calpick:hover { border-color: var(--vc, var(--accent)); color: var(--vc, var(--accent)); }
+.calpick.on { background: var(--vc, var(--accent)); color: #fff; border-color: var(--vc, var(--accent)); }
 
 .calendar {
   margin-top: 16px; padding: 13px 15px 15px;
@@ -373,8 +380,8 @@ code {
 }
 .cal-dc.out { opacity: .4; }
 .cal-dc.today {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+  border-color: var(--vc, var(--accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vc, var(--accent)) 20%, transparent);
 }
 .cal-dc-head {
   display: flex; align-items: baseline; gap: 6px;
@@ -384,8 +391,8 @@ code {
 .cal-dc-name.sun { color: #d0433a; }
 .cal-dc-name.sat { color: #2f6df6; }
 .cal-dc-date { font-size: 12px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.cal-dc.today .cal-dc-head { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.cal-dc.today .cal-dc-name, .cal-dc.today .cal-dc-date { color: var(--accent); }
+.cal-dc.today .cal-dc-head { background: color-mix(in srgb, var(--vc, var(--accent)) 12%, transparent); }
+.cal-dc.today .cal-dc-name, .cal-dc.today .cal-dc-date { color: var(--vc, var(--accent)); }
 
 .cal-dc-list { list-style: none; margin: 0; padding: 7px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
 /* 제목을 부서 색으로 칠하고 왼쪽에 색 띠를 둘러 어느 부서 일인지 보이게 합니다. */
@@ -467,6 +474,15 @@ code {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+/* 부서 카드에 살짝 떠오르는 호버 — 그 부서 색으로 은은하게 빛납니다. */
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--dept, var(--accent)) 45%, var(--line));
+    box-shadow: 0 16px 34px -18px color-mix(in srgb, var(--dept, var(--accent)) 50%, transparent), var(--shadow);
+  }
 }
 
 .card-head {
@@ -983,39 +999,43 @@ input:focus, select:focus, textarea:focus {
 /* 방과후·문해력 일정 — 캘린더처럼 그 자리에서 펼치는 띠 + iframe */
 /* 방과후·문해력·업무 캘린더 : 한 줄에 셋, 각각 주/월 버튼. 하나만 펼쳐진다. */
 .viewrow { display: flex; gap: 10px; margin-top: 12px; }
+/* 세 가지(방과후/문해력/업무 캘린더)에 각각 고유 색을 줍니다. */
+.vbar[data-bar="as"],  #asWrap   { --vc: #4f6ef7; }   /* 방과후 — 인디고블루 */
+.vbar[data-bar="mh"],  #mhWrap   { --vc: #0ea371; }   /* 문해력 — 에메랄드 */
+.vbar[data-bar="cal"], #calendar { --vc: #7c3aed; }   /* 업무 캘린더 — 바이올렛 */
 .vbar {
   position: relative;
   flex: 1 1 0; min-width: 0;
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
-  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: color-mix(in srgb, var(--vc, var(--accent)) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--vc, var(--accent)) 30%, var(--line));
   border-radius: 11px; box-shadow: var(--shadow);
   transition: box-shadow .18s ease, border-color .18s ease, background .18s ease, transform .18s ease;
 }
 /* 펼쳐진 바 — 또렷하게 강조하고, 아래 패널까지 '연결선'을 흘려 보냅니다. */
 .vbar.open {
-  border-color: var(--accent);
+  border-color: var(--vc, var(--accent));
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--accent) 20%, var(--panel)),
-    color-mix(in srgb, var(--accent) 11%, var(--panel)));
-  box-shadow: 0 0 0 1px var(--accent),
-              0 8px 22px -10px color-mix(in srgb, var(--accent) 60%, transparent);
+    color-mix(in srgb, var(--vc, var(--accent)) 20%, var(--panel)),
+    color-mix(in srgb, var(--vc, var(--accent)) 11%, var(--panel)));
+  box-shadow: 0 0 0 1px var(--vc, var(--accent)),
+              0 8px 22px -10px color-mix(in srgb, var(--vc, var(--accent)) 60%, transparent);
 }
-.vbar.open .v-name { color: var(--accent); }
+.vbar.open .v-name { color: var(--vc, var(--accent)); }
 /* 바 밑변 중앙에서 아래 패널로 내려가는 세로 연결선 + 끝에 반짝이는 점. */
 .vbar.open::before {
   content: ''; position: absolute; left: 50%; top: 100%;
   width: 2.5px; height: 20px; transform: translateX(-50%);
-  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 35%, transparent));
+  background: linear-gradient(180deg, var(--vc, var(--accent)), color-mix(in srgb, var(--vc, var(--accent)) 35%, transparent));
   border-radius: 2px; z-index: 3; pointer-events: none;
   animation: vbarStem .22s ease both;
 }
 .vbar.open::after {
   content: ''; position: absolute; left: 50%; top: calc(100% + 18px);
   width: 7px; height: 7px; transform: translate(-50%, -50%) rotate(45deg);
-  background: var(--accent); border-radius: 2px; z-index: 4; pointer-events: none;
-  box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent) 70%, transparent);
+  background: var(--vc, var(--accent)); border-radius: 2px; z-index: 4; pointer-events: none;
+  box-shadow: 0 0 10px 1px color-mix(in srgb, var(--vc, var(--accent)) 70%, transparent);
   animation: vbarDot .22s ease .06s both;
 }
 @keyframes vbarStem { from { transform: translateX(-50%) scaleY(0); } to { transform: translateX(-50%) scaleY(1); } }
@@ -1025,9 +1045,9 @@ input:focus, select:focus, textarea:focus {
 }
 /* 펼쳐진 패널 — 활성 바와 같은 강조색 테두리로 묶어 '한 덩어리'로 보이게 합니다. */
 .calendar.open, .embedwrap.open {
-  border: 1px solid var(--accent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
-              0 14px 34px -18px color-mix(in srgb, var(--accent) 55%, transparent);
+  border: 1px solid var(--vc, var(--accent));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vc, var(--accent)) 35%, transparent),
+              0 14px 34px -18px color-mix(in srgb, var(--vc, var(--accent)) 55%, transparent);
 }
 .embedwrap.open { border-radius: var(--radius); overflow: hidden; }
 .vbar .v-ico { font-size: 15px; line-height: 1; flex-shrink: 0; }
@@ -1038,8 +1058,8 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
   border-radius: 7px; padding: 3px 10px; line-height: 1.5; transition: background .12s, color .12s, border-color .12s;
 }
-.vpk:hover { border-color: var(--accent); color: var(--accent); }
-.vpk.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.vpk:hover { border-color: var(--vc, var(--accent)); color: var(--vc, var(--accent)); }
+.vpk.on { background: var(--vc, var(--accent)); border-color: var(--vc, var(--accent)); color: #fff; }
 .embedwrap { margin-top: 8px; }
 /* 폭이 좁으면 세로로 쌓기 */
 @media (max-width: 620px) {

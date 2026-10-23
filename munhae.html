@@ -90,6 +90,9 @@
   var scope = 'week';
   var _ps = new URLSearchParams(location.search).get('scope');
   if (_ps === 'month' || _ps === 'week' || _ps === 'next') scope = _ps;
+  // 허브에서 넘겨준 색(c)으로 강조색을 맞춥니다(방과후·문해력 각각 다른 색).
+  var _pc = new URLSearchParams(location.search).get('c');
+  if (_pc && /^#?[0-9a-fA-F]{6}$/.test(_pc)) document.documentElement.style.setProperty('--accent', _pc.charAt(0) === '#' ? _pc : '#' + _pc);
   else { try { if (localStorage.getItem('gbgc.mh.scope') === 'month') scope = 'month'; } catch (e) {} }
 
   var MAP = null, YEAR = null;

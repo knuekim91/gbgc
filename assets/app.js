@@ -672,15 +672,15 @@
   // ── 방과후 · 문해력 · 업무 캘린더: 한 줄에 두고 모두 '주/월'. 하나만 펼쳐지며,
   //    같은 버튼을 다시 누르면 접힌다. (afterschool/munhae 는 iframe 으로 품는다)
   var EMBED = {
-    as: { wrap: 'asWrap', frame: 'asFrame', page: 'afterschool.html' },
-    mh: { wrap: 'mhWrap', frame: 'mhFrame', page: 'munhae.html' }
+    as: { wrap: 'asWrap', frame: 'asFrame', page: 'afterschool.html', color: '#4f6ef7' },
+    mh: { wrap: 'mhWrap', frame: 'mhFrame', page: 'munhae.html', color: '#0ea371' }
   };
   var CUR = { view: null, scope: null };
 
   function hideEmbed(which) { $('#' + EMBED[which].wrap).hidden = true; }
   function openEmbed(which, scope) {
     var m = EMBED[which], frame = $('#' + m.frame);
-    if (!frame.getAttribute('src')) frame.setAttribute('src', m.page + '?embed=1&scope=' + scope);
+    if (!frame.getAttribute('src')) frame.setAttribute('src', m.page + '?embed=1&scope=' + scope + '&c=' + encodeURIComponent(m.color));
     else if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'setScope', scope: scope }, '*');
     $('#' + m.wrap).hidden = false;
   }
