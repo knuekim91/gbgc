@@ -41,7 +41,24 @@
   .as-wk.now .as-wklabel { color: var(--accent); }
   .as-wk.now .as-wklabel::after { content: '이번 주'; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 2px 8px; }
 
-  .as-note { margin-top: 20px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px 16px; }
+  /* 날짜를 누르면 그날 강좌 상세. 왼쪽 상세 + 오른쪽 운영시간안내. */
+  .as-day.clickable { cursor: pointer; }
+  .as-day.clickable:hover { border-color: var(--accent); }
+  .as-day.sel { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+
+  .as-detailrow { display: flex; gap: 12px; margin-top: 20px; align-items: flex-start; }
+  .as-detail { flex: 1.6 1 0; min-width: 0; background: var(--panel); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; }
+  .as-detail h2 { font-size: 15px; margin: 0 0 10px; color: var(--accent); letter-spacing: -.2px; }
+  .dt-prog { margin-bottom: 12px; }
+  .dt-ban { font-size: 13px; font-weight: 800; color: var(--ink); margin-bottom: 5px; }
+  .dt-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .dt-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 13px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--accent); border-radius: 8px; padding: 6px 9px; }
+  .dt-gyosi { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .dt-teacher { font-weight: 700; }
+  .dt-course { flex: 1 1 120px; }
+  .dt-room { color: var(--ink-3); font-size: 12px; }
+
+  .as-note { flex: 1 1 0; min-width: 0; margin-top: 0; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px 16px; }
   .as-note h2 { font-size: 14px; margin: 0 0 8px; color: var(--ink-2); }
   .as-note pre { margin: 0; font: inherit; font-size: 13px; color: var(--ink); white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
   .as-foot { margin-top: 18px; color: var(--ink-3); font-size: 11.5px; }
@@ -51,6 +68,7 @@
     .as-day { min-height: 0; }
     .as-items { flex-direction: row; flex-wrap: wrap; }
     .as-items li { flex: 0 0 auto; }
+    .as-detailrow { flex-direction: column; }
   }
 </style>
 </head>
@@ -74,16 +92,20 @@
   <div id="state" class="as-state">불러오는 중…</div>
   <section id="view" hidden></section>
 
-  <section id="noteBox" class="as-note" hidden>
-    <h2>운영 시간 안내</h2>
-    <pre id="note"></pre>
-  </section>
+  <div class="as-detailrow" id="detailRow" hidden>
+    <section class="as-detail" id="detail" hidden></section>
+    <section id="noteBox" class="as-note" hidden>
+      <h2>운영 시간 안내</h2>
+      <pre id="note"></pre>
+    </section>
+  </div>
 
   <p class="as-foot" id="foot" hidden></p>
 </main>
 
 <script>
   var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s) { return [].slice.call(document.querySelectorAll(s)); };
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   var scope = 'week';
@@ -96,8 +118,42 @@
   var SHEET_ID = '1BcvH-vnXmT1xOdROCEC18t3JRUJ3unJo3YWWZOfCxx8';
   var GID = '970771263';
   var CSV_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + GID;
-  var GRID = null;
+  // 강좌개설 탭 — 날짜를 누르면 보여 줄 교시/교사/강좌명/강의실의 원천.
+  var COURSE_GID = '370035100';
+  var COURSE_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + COURSE_GID;
+  var GRID = null, COURSES = {};
   var NL = String.fromCharCode(10), CR = String.fromCharCode(13);
+
+  // 편성요일 글자로 '반'(방과후일정 칸과 같은 키)을 정합니다.
+  function baseKey(p) {
+    if (p.indexOf('자격A') >= 0) return '자격A';
+    if (p.indexOf('금공반') >= 0) return '금공반';
+    if (p.indexOf('기초기본향상') >= 0) return '기초';     // 요일로 기초A(목)·기초B(금) 나눔
+    if (p.indexOf('상업경진') >= 0) return '상경진';       // 운영완료 → 제외
+    return '';
+  }
+  // COURSES[반][요일] = [{교시, 교사, 강좌명, 강의실, 학년}]
+  function parseCourses(g) {
+    var hr = -1;
+    for (var i = 0; i < g.length; i++) { if ((g[i] || []).indexOf('강좌명') >= 0) { hr = i; break; } }
+    if (hr < 0) return;
+    for (var r = hr + 1; r < g.length; r++) {
+      var row = g[r], teacher = String(row[1] || '').trim();
+      if (!teacher) continue;
+      var base = baseKey(String(row[4] || ''));
+      if (!base || base === '상경진') continue;
+      var course = String(row[6] || '').trim() || String(row[7] || '').trim();
+      var room = String(row[8] || '').trim(), grade = String(row[3] || '').trim();
+      var su = String(row[5] || ''), re = /([월화수목금])\((\d+)\)/g, m;
+      while ((m = re.exec(su))) {
+        var yo = m[1], gyosi = m[2].split('').join('·') + '교시';
+        var ban = base === '기초' ? (yo === '목' ? '기초A' : '기초B') : base;
+        (COURSES[ban] = COURSES[ban] || {});
+        (COURSES[ban][yo] = COURSES[ban][yo] || []);
+        COURSES[ban][yo].push({ gyosi: gyosi, teacher: teacher, course: course, room: room, grade: grade });
+      }
+    }
+  }
 
   function parseCSV(s) {
     var rows = [], row = [], cur = '', q = false;
@@ -164,10 +220,39 @@
       var items = (day.items && day.items.length)
         ? '<ul class="as-items">' + day.items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'
         : '<div class="as-empty">일정 없음</div>';
-      return '<div class="as-day' + (day.isToday ? ' today' : '') + '">' +
+      // 강좌개설에 있는 반이 그날 있으면 클릭해서 상세를 볼 수 있습니다.
+      var progs = (day.items || []).filter(function (x) { return COURSES[x]; });
+      var clk = progs.length ? ' clickable" data-progs="' + esc(progs.join('|')) + '" data-date="' + esc(day.date) + '" data-yo="' + esc(day.name) + '"' : '"';
+      return '<div class="as-day' + (day.isToday ? ' today' : '') + clk + '>' +
         '<div class="as-dhead"><span class="as-dname">' + esc(day.name) + '</span>' +
         '<span class="as-ddate">' + esc(day.date) + '</span></div>' + items + '</div>';
     }).join('') + '</div>';
+  }
+
+  // 날짜를 누르면 그날 강좌 상세를 왼쪽에 보여 줍니다(운영시간안내는 오른쪽으로).
+  function selectDay(el) {
+    if (el.classList.contains('sel')) {   // 같은 날 다시 누르면 닫기
+      el.classList.remove('sel'); $('#detail').hidden = true; setTimeout(postHeight, 30); return;
+    }
+    $$('.as-day.sel').forEach(function (d) { d.classList.remove('sel'); });
+    el.classList.add('sel');
+    var progs = el.dataset.progs.split('|'), date = el.dataset.date, yo = el.dataset.yo;
+    var html = '<h2>📌 ' + esc(date) + ' (' + esc(yo) + ') 방과후 강좌</h2>', any = false;
+    progs.forEach(function (p) {
+      var list = (COURSES[p] && COURSES[p][yo]) || [];
+      if (!list.length) return;
+      any = true;
+      html += '<div class="dt-prog"><div class="dt-ban">' + esc(p) + '</div><ul class="dt-list">' +
+        list.map(function (s) {
+          return '<li><span class="dt-gyosi">' + esc(s.gyosi) + '</span>' +
+            '<span class="dt-teacher">' + esc(s.teacher) + '</span>' +
+            '<span class="dt-course">' + esc(s.course) + '</span>' +
+            '<span class="dt-room">' + esc(s.room) + '</span></li>';
+        }).join('') + '</ul></div>';
+    });
+    if (!any) html += '<div class="as-empty">이 날은 등록된 강좌 상세가 없습니다.</div>';
+    var dt = $('#detail'); dt.innerHTML = html; dt.hidden = false;
+    setTimeout(postHeight, 30);
   }
 
   function postHeight() {
@@ -194,8 +279,11 @@
       view.innerHTML = dayCardsHtml(d.days);
     }
     lab.hidden = false; view.hidden = false;
+    // 새로 그릴 때 상세는 접고(선택 해제), 운영시간안내만 보입니다.
+    $('#detail').hidden = true;
     if (d.note) { $('#note').textContent = d.note; $('#noteBox').hidden = false; }
-    $('#foot').textContent = '학교 방과후학교 시트에서 자동으로 불러옵니다.';
+    $('#detailRow').hidden = false;
+    $('#foot').textContent = '학교 방과후학교 시트에서 자동으로 불러옵니다. 날짜를 누르면 그날 강좌가 나옵니다.';
     $('#foot').hidden = false;
     setTimeout(postHeight, 30);
   }
@@ -217,11 +305,22 @@
     syncTabs();
     $('#state').hidden = false; $('#state').className = 'as-state'; $('#state').textContent = '불러오는 중…';
     $('#view').hidden = true;
-    fetch(CSV_URL, { redirect: 'follow' })
-      .then(function (r) { if (!r.ok) throw new Error('시트 응답 ' + r.status); return r.text(); })
-      .then(function (txt) { GRID = parseCSV(txt); renderScope(); })
-      .catch(function (e) { showError('일정을 불러오지 못했습니다.' + NL + e.message + NL + '잠시 후 새로고침해 주세요.'); });
+    var getCSV = function (url) { return fetch(url, { redirect: 'follow' }).then(function (r) { if (!r.ok) throw new Error('시트 응답 ' + r.status); return r.text(); }); };
+    Promise.all([
+      getCSV(CSV_URL),
+      getCSV(COURSE_URL).catch(function () { return ''; })   // 강좌개설 못 읽어도 일정은 보이게
+    ]).then(function (res) {
+      GRID = parseCSV(res[0]);
+      COURSES = {}; if (res[1]) parseCourses(parseCSV(res[1]));
+      renderScope();
+    }).catch(function (e) { showError('일정을 불러오지 못했습니다.' + NL + e.message + NL + '잠시 후 새로고침해 주세요.'); });
   }
+
+  // 날짜(클릭 가능한 칸) 클릭 → 상세
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('.as-day.clickable');
+    if (el) selectDay(el);
+  });
 
   document.querySelector('.as-tabs').addEventListener('click', function (e) {
     var b = e.target.closest('.as-tab'); if (!b || b.dataset.scope === scope) return;
