@@ -635,9 +635,8 @@
       '<div class="cal-head">' +
         '<div class="cal-title">📅 업무 캘린더 <span class="cal-span">' + span + '</span></div>' +
         '<div class="cal-tools">' +
-          '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-view="cal" data-scope="week">주</button>' +
-          '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-view="cal" data-scope="month">월</button>' +
-          '<button type="button" class="linklike" data-view="cal" data-scope="hide">숨기기</button>' +
+          '<button type="button" class="calpick' + (weeks === 2 ? ' on' : '') + '" data-view="cal" data-scope="week">2주</button>' +
+          '<button type="button" class="calpick' + (weeks === 4 ? ' on' : '') + '" data-view="cal" data-scope="month">4주</button>' +
         '</div>' +
       '</div>';
 
