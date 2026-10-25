@@ -288,6 +288,11 @@
     $('#detail').hidden = true;
     if (d.note) { $('#note').textContent = d.note; $('#noteBox').hidden = false; }
     $('#detailRow').hidden = false;
+    // 주 보기: 오늘 수업이 있으면 오늘 강좌 상세를 기본으로 펼쳐 보여 줍니다.
+    if (d.scope === 'week') {
+      var todayEl = view.querySelector('.as-day.today.clickable');
+      if (todayEl) selectDay(todayEl);
+    }
     $('#foot').textContent = '학교 방과후학교 시트에서 자동으로 불러옵니다. 날짜를 누르면 그날 강좌가 나옵니다.';
     $('#foot').hidden = false;
     setTimeout(postHeight, 30);
