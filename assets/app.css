@@ -1068,3 +1068,23 @@ input:focus, select:focus, textarea:focus {
   .vbar.open::before, .vbar.open::after { display: none; }
 }
 .embedframe { width: 100%; border: 0; display: block; height: 320px; overflow: hidden; }
+
+/* 상단 바로가기 링크(문해력·모집현황) — 알약 버튼, 새 탭으로 열림 */
+.qlink {
+  --ql: var(--accent);
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 13px; border-radius: 999px; text-decoration: none;
+  font-size: 13px; font-weight: 700; white-space: nowrap;
+  color: var(--ql);
+  background: color-mix(in srgb, var(--ql) 12%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--ql) 40%, var(--line));
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.qlink:hover {
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--ql) 20%, var(--panel));
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--ql) 65%, transparent);
+}
+.ql-munhae { --ql: #0ea371; }
+.ql-promo  { --ql: #e8830c; }
+@media (max-width: 480px) { .qlink { padding: 5px 10px; font-size: 12px; } }
