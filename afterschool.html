@@ -54,6 +54,15 @@
   .dt-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
   .dt-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 13px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--accent); border-radius: 8px; padding: 6px 9px; }
   .dt-gyosi { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  /* 반마다 고유 색: 자격A=파랑 · 금공반=주황 · 공무원반=분홍 */
+  [data-ban="자격A"]   { --bc: #3b82f6; }
+  [data-ban="금공반"]   { --bc: #f08a1c; }
+  [data-ban="공무원반"] { --bc: #d946a8; }
+  .as-items li[data-ban], .dt-prog[data-ban] .dt-list li { border-left-color: var(--bc, var(--accent)); }
+  .as-items li[data-ban="자격A"], .as-items li[data-ban="금공반"], .as-items li[data-ban="공무원반"] { background: color-mix(in srgb, var(--bc) 13%, var(--panel-2)); color: color-mix(in srgb, var(--bc) 70%, var(--ink)); }
+  .dt-prog[data-ban] .dt-ban { color: var(--bc, var(--ink)); }
+  .dt-prog[data-ban] .dt-gyosi { color: var(--bc, var(--accent)); }
   .dt-teacher { font-weight: 700; }
   .dt-course { flex: 1 1 120px; }
   .dt-room { color: var(--ink-3); font-size: 12px; }
@@ -247,7 +256,7 @@
   function dayCardsHtml(days) {
     return '<div class="as-grid">' + days.map(function (day) {
       var items = (day.items && day.items.length)
-        ? '<ul class="as-items">' + day.items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'
+        ? '<ul class="as-items">' + day.items.map(function (x) { return '<li data-ban="' + esc(x) + '">' + esc(x) + '</li>'; }).join('') + '</ul>'
         : '<div class="as-empty">일정 없음</div>';
       // 강좌개설에 있는 반이 그날 있으면 클릭해서 상세를 볼 수 있습니다.
       var progs = (day.items || []).filter(function (x) { return COURSES[x]; });
@@ -271,7 +280,7 @@
       var list = (COURSES[p] && COURSES[p][yo]) || [];
       if (!list.length) return;
       any = true;
-      html += '<div class="dt-prog"><div class="dt-ban">' + esc(p) + '</div><ul class="dt-list">' +
+      html += '<div class="dt-prog" data-ban="' + esc(p) + '"><div class="dt-ban">' + esc(p) + '</div><ul class="dt-list">' +
         list.map(function (s) {
           return '<li><span class="dt-gyosi">' + esc(s.gyosi) + '</span>' +
             '<span class="dt-teacher">' + esc(s.teacher) + '</span>' +
