@@ -142,7 +142,7 @@
   // 다른 부서에서 운영하는 방과후 강좌(시트에 없음). 예비 산학맞춤반 → '공무원반'
   // 운영: 2026.9.14~12.18, 8·9교시(16:40~18:30), 장소 1학년 3반 교실.
   var EXTRA = [{
-    ban: '공무원반', from: new Date(2026, 8, 14), to: new Date(2026, 11, 18),
+    ban: '공무원반', info: '월~금(공무원반): 8,9교시(16:40~18:30)', from: new Date(2026, 8, 14), to: new Date(2026, 11, 18),
     days: {
       '월': { course: '영어', teacher: '이지은' }, '화': { course: '국어', teacher: '이점희' },
       '수': { course: '한국사', teacher: '김명준' }, '목': { course: '영어', teacher: '이지은' },
@@ -322,7 +322,9 @@
     lab.hidden = false; view.hidden = false;
     // 새로 그릴 때 상세는 접고(선택 해제), 운영시간안내만 보입니다.
     $('#detail').hidden = true;
-    if (d.note) { $('#note').textContent = d.note; $('#noteBox').hidden = false; }
+    var noteTxt = d.note || '';
+    EXTRA.forEach(function (ex) { if (noteTxt.indexOf(ex.ban) < 0) noteTxt += (noteTxt ? String.fromCharCode(10) : '') + ex.info; });
+    if (noteTxt) { $('#note').textContent = noteTxt; $('#noteBox').hidden = false; }
     $('#detailRow').hidden = false;
     // 주 보기: 오늘 수업이 있으면 오늘 강좌 상세를 기본으로 펼쳐 보여 줍니다.
     if (d.scope === 'week') {
