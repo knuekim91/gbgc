@@ -701,17 +701,19 @@
     }
     $('#asWrap').classList.toggle('open', CUR.view === 'as');
     $('#mhWrap').classList.toggle('open', CUR.view === 'mh');
+    $('#mealWrap').classList.toggle('open', CUR.view === 'meal');
   }
   function closeAllViews() {
-    hideEmbed('as'); hideEmbed('mh'); closeCalendar();
+    hideEmbed('as'); hideEmbed('mh'); closeCalendar(); $('#mealWrap').hidden = true;
     CUR = { view: null, scope: null };
     store(LS.openView, null);
     syncBars();
   }
   function openView(which, scope) {
-    hideEmbed('as'); hideEmbed('mh');
+    hideEmbed('as'); hideEmbed('mh'); $('#mealWrap').hidden = true;
     if (which !== 'cal') closeCalendar();
     if (which === 'cal') { state.cal = scope; renderCalendar(); }
+    else if (which === 'meal') $('#mealWrap').hidden = false;
     else openEmbed(which, scope);
     CUR = { view: which, scope: scope };
     store(LS.openView, which + ':' + scope);
@@ -727,7 +729,8 @@
     if (ov) {
       var p = ov.split(':');
       var s2 = (p[1] === 'month' || p[1] === 'next') ? p[1] : 'week';
-      if (EMBED[p[0]] || p[0] === 'cal') openView(p[0], s2);
+      if (p[0] === 'meal') openView('meal', 'on');
+      else if (EMBED[p[0]] || p[0] === 'cal') openView(p[0], s2);
     }
   }
 

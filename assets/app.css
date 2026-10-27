@@ -1088,3 +1088,14 @@ input:focus, select:focus, textarea:focus {
 .ql-munhae { --ql: #0ea371; }
 .ql-promo  { --ql: #e8830c; }
 @media (max-width: 480px) { .qlink { padding: 5px 10px; font-size: 12px; } }
+
+/* 급식 당번 — 네 번째 바(코랄). 데이터가 생기기 전에는 안내 문구만 보입니다. */
+.vbar[data-bar="meal"], #mealWrap { --vc: #e5484d; }
+.vbar-meal { flex: 0 0 auto; }
+.mealwrap {
+  margin-top: 8px; padding: 22px 18px; text-align: center;
+  background: var(--panel); border-radius: var(--radius);
+  border: 1px solid var(--vc); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vc) 35%, transparent), 0 14px 34px -18px color-mix(in srgb, var(--vc) 55%, transparent);
+}
+.meal-msg { margin: 0; font-size: 15px; color: var(--ink-2); }
+.meal-msg b { color: var(--vc); }
