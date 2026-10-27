@@ -150,6 +150,8 @@
   // 다른 부서에서 운영하는 방과후 강좌(시트에 없음). 예비 산학맞춤반 → '공무원반'
   // 운영: 2026.9.14~12.18, 8·9교시(16:40~18:30), 장소 1학년 3반 교실.
   var EXTRA = [{
+    // 수업이 없는 날(11/13, 11/18~11/20, 11/30~12/18)
+    off: [[new Date(2026, 10, 13), new Date(2026, 10, 13)], [new Date(2026, 10, 18), new Date(2026, 10, 20)], [new Date(2026, 10, 30), new Date(2026, 11, 18)]],
     ban: '공무원반', info: '월~금(공무원반): 8,9교시(16:40~18:30)', from: new Date(2026, 8, 14), to: new Date(2026, 11, 18),
     days: {
       '월': { course: '영어', teacher: '이지은' }, '화': { course: '국어', teacher: '이점희' },
@@ -243,7 +245,8 @@
         var dt = addD(wk.mon, d);
         // 다른 부서 운영 강좌(공무원반): 운영 기간 안의 해당 요일에 자동으로 표시합니다.
         EXTRA.forEach(function (ex) {
-          if (ex.days[names[d]] && dt >= ex.from && dt <= ex.to && items.indexOf(ex.ban) < 0) items.push(ex.ban);
+          var isOff = ex.off.some(function (r) { return dt >= r[0] && dt <= r[1]; });
+          if (ex.days[names[d]] && dt >= ex.from && dt <= ex.to && !isOff && items.indexOf(ex.ban) < 0) items.push(ex.ban);
         });
         out.push({ name: names[d], date: (dt.getMonth() + 1) + '/' + dt.getDate(), isToday: dt.getTime() === today.getTime(), items: items });
       }
