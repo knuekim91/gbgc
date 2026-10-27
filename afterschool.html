@@ -126,6 +126,26 @@
   var COURSE_GID = '370035100';
   var COURSE_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + COURSE_GID;
   var GRID = null, COURSES = {};
+
+  // 다른 부서에서 운영하는 방과후 강좌(시트에 없음). 예비 산학맞춤반 → '공무원반'
+  // 운영: 2026.9.14~12.18, 8·9교시(16:40~18:30), 장소 1학년 3반 교실.
+  var EXTRA = [{
+    ban: '공무원반', from: new Date(2026, 8, 14), to: new Date(2026, 11, 18),
+    days: {
+      '월': { course: '영어', teacher: '이지은' }, '화': { course: '국어', teacher: '이점희' },
+      '수': { course: '한국사', teacher: '김명준' }, '목': { course: '영어', teacher: '이지은' },
+      '금': { course: '국어', teacher: '이점희' }
+    }
+  }];
+  function addExtraCourses() {
+    EXTRA.forEach(function (ex) {
+      COURSES[ex.ban] = COURSES[ex.ban] || {};
+      Object.keys(ex.days).forEach(function (yo) {
+        var c = ex.days[yo];
+        (COURSES[ex.ban][yo] = COURSES[ex.ban][yo] || []).push({ gyosi: '8·9교시', teacher: c.teacher, course: c.course, room: '1-3반 교실', grade: '' });
+      });
+    });
+  }
   var NL = String.fromCharCode(10), CR = String.fromCharCode(13);
 
   // 편성요일 글자로 '반'(방과후일정 칸과 같은 키)을 정합니다.
@@ -201,6 +221,10 @@
         var cell = String(g[wk.row][2 + d] || '');
         var items = cell.split(/[\n,]/).map(function (x) { return x.trim(); }).filter(function (x) { return x && x !== '-'; });
         var dt = addD(wk.mon, d);
+        // 다른 부서 운영 강좌(공무원반): 운영 기간 안의 해당 요일에 자동으로 표시합니다.
+        EXTRA.forEach(function (ex) {
+          if (ex.days[names[d]] && dt >= ex.from && dt <= ex.to && items.indexOf(ex.ban) < 0) items.push(ex.ban);
+        });
         out.push({ name: names[d], date: (dt.getMonth() + 1) + '/' + dt.getDate(), isToday: dt.getTime() === today.getTime(), items: items });
       }
       return out;
@@ -322,6 +346,7 @@
     ]).then(function (res) {
       GRID = parseCSV(res[0]);
       COURSES = {}; if (res[1]) parseCourses(parseCSV(res[1]));
+      addExtraCourses();
       renderScope();
     }).catch(function (e) { showError('일정을 불러오지 못했습니다.' + NL + e.message + NL + '잠시 후 새로고침해 주세요.'); });
   }
