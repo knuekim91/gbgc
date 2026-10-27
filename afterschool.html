@@ -46,6 +46,14 @@
   .as-day.clickable:hover { border-color: var(--accent); }
   .as-day.sel { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
 
+  /* 오늘은 작은 '오늘' 표시로 알려 주고, 다른 날을 골랐을 때는 오늘의 진한 강조를 풀어 선택한 날만 진하게 보입니다. */
+  .as-day.today .as-dhead::after { content: '오늘'; margin-left: auto; font-size: 10.5px; font-weight: 800; color: #fff; background: var(--accent); border-radius: 999px; padding: 1px 7px; align-self: center; }
+  .has-sel .as-day.today:not(.sel) { border-color: var(--line); box-shadow: var(--shadow); }
+  .has-sel .as-day.today:not(.sel) .as-dhead { background: none; }
+  .has-sel .as-day.today:not(.sel) .as-dname { color: inherit; }
+  .as-day.sel .as-dhead { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .as-day.sel .as-dname { color: var(--accent); }
+
   .as-detailrow { display: flex; gap: 12px; margin-top: 20px; align-items: flex-start; }
   .as-detail { flex: 1.6 1 0; min-width: 0; background: var(--panel); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; }
   .as-detail h2 { font-size: 15px; margin: 0 0 10px; color: var(--accent); letter-spacing: -.2px; }
@@ -273,10 +281,11 @@
   // 날짜를 누르면 그날 강좌 상세를 왼쪽에 보여 줍니다(운영시간안내는 오른쪽으로).
   function selectDay(el) {
     if (el.classList.contains('sel')) {   // 같은 날 다시 누르면 닫기
-      el.classList.remove('sel'); $('#detail').hidden = true; setTimeout(postHeight, 30); return;
+      el.classList.remove('sel'); $('#view').classList.remove('has-sel'); $('#detail').hidden = true; setTimeout(postHeight, 30); return;
     }
     $$('.as-day.sel').forEach(function (d) { d.classList.remove('sel'); });
     el.classList.add('sel');
+    $('#view').classList.add('has-sel');
     var progs = el.dataset.progs.split('|'), date = el.dataset.date, yo = el.dataset.yo;
     var html = '<h2>📌 ' + esc(date) + ' (' + esc(yo) + ') 방과후 강좌</h2>', any = false;
     progs.forEach(function (p) {
@@ -321,7 +330,7 @@
     }
     lab.hidden = false; view.hidden = false;
     // 새로 그릴 때 상세는 접고(선택 해제), 운영시간안내만 보입니다.
-    $('#detail').hidden = true;
+    $('#detail').hidden = true; view.classList.remove('has-sel');
     var noteTxt = d.note || '';
     EXTRA.forEach(function (ex) { if (noteTxt.indexOf(ex.ban) < 0) noteTxt += (noteTxt ? String.fromCharCode(10) : '') + ex.info; });
     if (noteTxt) { $('#note').textContent = noteTxt; $('#noteBox').hidden = false; }
