@@ -1091,7 +1091,6 @@ input:focus, select:focus, textarea:focus {
 
 /* 급식 당번 — 네 번째 바(코랄). 데이터가 생기기 전에는 안내 문구만 보입니다. */
 .vbar[data-bar="meal"], #mealWrap { --vc: #e5484d; }
-.vbar-meal { flex: 0 0 auto; }
 .mealwrap {
   margin-top: 8px; padding: 22px 18px; text-align: center;
   background: var(--panel); border-radius: var(--radius);
@@ -1099,3 +1098,15 @@ input:focus, select:focus, textarea:focus {
 }
 .meal-msg { margin: 0; font-size: 15px; color: var(--ink-2); }
 .meal-msg b { color: var(--vc); }
+
+/* 네 개의 바를 같은 크기로. 넓을 땐 한 줄 4칸, 좁아지면 이름이 잘리지 않게 2×2 → 1열 */
+.viewrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 1100px) {
+  .vbar { padding: 8px 9px; gap: 6px; }
+  .vpk { padding: 3px 8px; }
+}
+@media (max-width: 1180px) {
+  .viewrow { grid-template-columns: repeat(2, 1fr); }
+  .vbar.open::before, .vbar.open::after { display: none; }  /* 2줄이면 연결선이 패널을 가리키지 않음 */
+}
+@media (max-width: 620px) { .viewrow { grid-template-columns: 1fr; gap: 8px; } }

@@ -86,7 +86,9 @@
     <div class="vbar vbar-meal" data-bar="meal">
       <span class="v-ico" aria-hidden="true">🍱</span><span class="v-name">급식 당번</span>
       <span class="v-picks">
-        <button type="button" class="vpk" data-view="meal" data-scope="on">보기</button>
+        <button type="button" class="vpk" data-view="meal" data-scope="week">주</button>
+        <button type="button" class="vpk" data-view="meal" data-scope="month">월</button>
+        <button type="button" class="vpk" data-view="meal" data-scope="next">다음달</button>
       </span>
     </div>
   </div>
@@ -98,7 +100,7 @@
   </div>
   <section id="calendar" class="calendar" hidden aria-label="업무 캘린더"></section>
   <section id="mealWrap" class="mealwrap" hidden aria-label="급식 당번">
-    <p class="meal-msg"><span aria-hidden="true">🍱</span> 급식 당번은 <b>11월부터 안내 예정</b>입니다.</p>
+    <p class="meal-msg"><span aria-hidden="true">🍱</span> <span id="mealScope">이번 주</span> 급식 당번은 <b>11월부터 안내 예정</b>입니다.</p>
   </section>
 
   <div id="board" class="board"></div>

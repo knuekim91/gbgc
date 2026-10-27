@@ -713,7 +713,7 @@
     hideEmbed('as'); hideEmbed('mh'); $('#mealWrap').hidden = true;
     if (which !== 'cal') closeCalendar();
     if (which === 'cal') { state.cal = scope; renderCalendar(); }
-    else if (which === 'meal') $('#mealWrap').hidden = false;
+    else if (which === 'meal') { $('#mealScope').textContent = scope === 'month' ? '이번 달' : scope === 'next' ? '다음 달' : '이번 주'; $('#mealWrap').hidden = false; }
     else openEmbed(which, scope);
     CUR = { view: which, scope: scope };
     store(LS.openView, which + ':' + scope);
@@ -729,8 +729,7 @@
     if (ov) {
       var p = ov.split(':');
       var s2 = (p[1] === 'month' || p[1] === 'next') ? p[1] : 'week';
-      if (p[0] === 'meal') openView('meal', 'on');
-      else if (EMBED[p[0]] || p[0] === 'cal') openView(p[0], s2);
+      if (EMBED[p[0]] || p[0] === 'cal' || p[0] === 'meal') openView(p[0], s2);
     }
   }
 
