@@ -55,12 +55,15 @@
   .dt-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 13px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--accent); border-radius: 8px; padding: 6px 9px; }
   .dt-gyosi { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
 
-  /* 반마다 고유 색: 자격A=파랑 · 금공반=주황 · 공무원반=분홍 */
+  /* 반마다 고유 색: 자격A=파랑 · 금공반=주황 · 공무원반=분홍 · 기초A=초록 · 기초B=청록 · 자격B=보라 */
   [data-ban="자격A"]   { --bc: #3b82f6; }
   [data-ban="금공반"]   { --bc: #f08a1c; }
   [data-ban="공무원반"] { --bc: #d946a8; }
+  [data-ban="기초A"]   { --bc: #22a35a; }
+  [data-ban="기초B"]   { --bc: #0ea5b7; }
+  [data-ban="자격B"]   { --bc: #8b5cf6; }
   .as-items li[data-ban], .dt-prog[data-ban] .dt-list li { border-left-color: var(--bc, var(--accent)); }
-  .as-items li[data-ban="자격A"], .as-items li[data-ban="금공반"], .as-items li[data-ban="공무원반"] { background: color-mix(in srgb, var(--bc) 13%, var(--panel-2)); color: color-mix(in srgb, var(--bc) 70%, var(--ink)); }
+  .as-items li[data-ban="자격A"], .as-items li[data-ban="금공반"], .as-items li[data-ban="공무원반"], .as-items li[data-ban="기초A"], .as-items li[data-ban="기초B"], .as-items li[data-ban="자격B"] { background: color-mix(in srgb, var(--bc) 13%, var(--panel-2)); color: color-mix(in srgb, var(--bc) 70%, var(--ink)); }
   .dt-prog[data-ban] .dt-ban { color: var(--bc, var(--ink)); }
   .dt-prog[data-ban] .dt-gyosi { color: var(--bc, var(--accent)); }
   .dt-teacher { font-weight: 700; }
