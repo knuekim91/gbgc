@@ -1096,8 +1096,6 @@ input:focus, select:focus, textarea:focus {
   background: var(--panel); border-radius: var(--radius);
   border: 1px solid var(--vc); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vc) 35%, transparent), 0 14px 34px -18px color-mix(in srgb, var(--vc) 55%, transparent);
 }
-.meal-msg { margin: 0; font-size: 15px; color: var(--ink-2); }
-.meal-msg b { color: var(--vc); }
 
 /* 네 개의 바를 같은 크기로. 넓을 땐 한 줄 4칸, 좁아지면 이름이 잘리지 않게 2×2 → 1열 */
 .viewrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -1110,3 +1108,32 @@ input:focus, select:focus, textarea:focus {
   .vbar.open::before, .vbar.open::after { display: none; }  /* 2줄이면 연결선이 패널을 가리키지 않음 */
 }
 @media (max-width: 620px) { .viewrow { grid-template-columns: 1fr; gap: 8px; } }
+
+/* 급식 당번 패널(코랄) — 날짜 카드 + 이름 찾기 */
+.mealwrap { text-align: left; padding: 14px 15px 15px; }
+.meal-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.meal-title { font-size: 14.5px; font-weight: 700; }
+.meal-sub { font-size: 12px; color: var(--ink-3); }
+.meal-q { margin-left: auto; width: 150px; font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); }
+.meal-q:focus { outline: none; border-color: var(--vc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--vc) 18%, transparent); }
+.meal-wk { margin-bottom: 12px; }
+.meal-wk:last-child { margin-bottom: 0; }
+.meal-wklabel { font-size: 12px; font-weight: 700; color: var(--ink-3); margin: 0 0 6px; }
+.meal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.meal-day { border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2); overflow: hidden; min-width: 0; transition: opacity .15s; }
+.meal-dh { display: flex; align-items: baseline; gap: 6px; padding: 7px 9px; border-bottom: 1px solid var(--line-2); }
+.meal-dn { font-weight: 800; font-size: 14px; }
+.meal-dd { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.meal-jo { margin-left: auto; align-self: center; font-size: 12px; font-weight: 800; color: #fff; background: var(--vc); border-radius: 999px; padding: 1px 9px; }
+.meal-names { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; }
+.meal-names span { font-size: 13.5px; font-weight: 600; padding: 3px 8px; border-radius: 7px; background: color-mix(in srgb, var(--vc) 13%, transparent); color: var(--ink); }
+.meal-empty { padding: 12px 9px; font-size: 12.5px; color: var(--ink-3); }
+.meal-day.note .meal-empty { color: #d0433a; font-weight: 700; }
+.meal-day.today { border-color: var(--vc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--vc) 22%, transparent); }
+.meal-day.today .meal-dh { background: color-mix(in srgb, var(--vc) 12%, transparent); }
+.meal-day.hit { border-color: var(--vc); box-shadow: 0 0 0 2px var(--vc); }
+.meal-day.hit .meal-names span.m { background: var(--vc); color: #fff; }
+.meal-day.dim { opacity: .35; }
+.meal-msg { margin: 6px 0 4px; text-align: center; font-size: 14px; color: var(--ink-2); }
+.meal-msg b { color: var(--vc); }
+@media (max-width: 720px) { .meal-grid { grid-template-columns: 1fr; } .meal-day.none { display: none; } .meal-q { width: 100%; margin-left: 0; } }

@@ -100,7 +100,12 @@
   </div>
   <section id="calendar" class="calendar" hidden aria-label="업무 캘린더"></section>
   <section id="mealWrap" class="mealwrap" hidden aria-label="급식 당번">
-    <p class="meal-msg"><span aria-hidden="true">🍱</span> <span id="mealScope">이번 주</span> 급식 당번은 <b>11월부터 안내 예정</b>입니다.</p>
+    <div class="meal-top">
+      <span class="meal-title">🍱 <span id="mealTitle">급식 당번</span></span>
+      <span class="meal-sub">급식지도교사 조별 당번</span>
+      <input id="mealQ" class="meal-q" type="search" placeholder="이름으로 찾기" autocomplete="off" aria-label="교사 이름으로 당번 찾기">
+    </div>
+    <div id="mealBody"></div>
   </section>
 
   <div id="board" class="board"></div>

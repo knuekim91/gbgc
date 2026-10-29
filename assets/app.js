@@ -673,6 +673,64 @@
 
   // ── 방과후 · 문해력 · 업무 캘린더: 한 줄에 두고 모두 '주/월'. 하나만 펼쳐지며,
   //    같은 버튼을 다시 누르면 접힌다. (afterschool/munhae 는 iframe 으로 품는다)
+  // ── 급식 당번: 2026학년도 2학기 급식지도교사 조별 당번표(11월). 다음 달 표가 나오면 아래 표에 줄만 더하면 됩니다.
+  var MEAL = {};
+  [
+      ['2026-11-02','11조','김경희,길하나,장현석'],['2026-11-03','12조','김종대,이은주,이지은'],['2026-11-04','13조','허영주,전다윤,이보경'],['2026-11-05','9조','김정선,장용준,이수진'],['2026-11-06','10조','황혜원,홍진리,김효주'],
+      ['2026-11-09','1조','정대명,이점희,김재홍'],['2026-11-10','2조','박민정,표정현,김동익'],['2026-11-11','3조','노종섭,권귀리,김지현'],['2026-11-12','4조','이시영,오세윤,채경인'],['2026-11-13','5조','조혜진,도호영,사공걸'],
+      ['2026-11-16','6조','한정희,여상척,손하경'],['2026-11-17','7조','하진미,이은숙,김지언'],['2026-11-18','8조','김명준,윤재욱,김슬기'],['2026-11-20','10조','황혜원,홍진리,김효주'],
+      ['2026-11-23','11조','김경희,길하나,장현석'],['2026-11-24','12조','김종대,이은주,이지은'],['2026-11-25','13조','허영주,전다윤,이보경'],['2026-11-26','9조','김정선,장용준,이수진'],['2026-11-27','6조','한정희,여상척,손하경'],
+      ['2026-11-30','1조','정대명,이점희,김재홍']
+  ].forEach(function (r) { MEAL[r[0]] = { jo: r[1], names: r[2].split(',') }; });
+  MEAL['2026-11-19'] = { note: '수학능력시험' };
+
+  function mealMondayOf(d) { return addDays(midnight(d), -((d.getDay() + 6) % 7)); }
+  function renderMeal(scope) {
+    var today = midnight(new Date()), mondays = [], title;
+    if (scope === 'week') { mondays = [mealMondayOf(today)]; title = '이번 주'; }
+    else {
+      var base = today.getMonth() + (scope === 'next' ? 1 : 0);
+      var yr = today.getFullYear() + Math.floor(base / 12), mo = ((base % 12) + 12) % 12;
+      var end = new Date(yr, mo + 1, 0);
+      for (var m = mealMondayOf(new Date(yr, mo, 1)); m <= end; m = addDays(m, 7)) if (m.getMonth() === mo) mondays.push(new Date(m));
+      title = (scope === 'next' ? '다음 달 ' : '이번 달 ') + (mo + 1) + '월';
+    }
+    var any = false, names = ['월', '화', '수', '목', '금'];
+    var html = mondays.map(function (mon) {
+      var cards = '';
+      for (var i = 0; i < 5; i++) {
+        var d = addDays(mon, i), e = MEAL[ymdKey(d)], cls = 'meal-day' + (d.getTime() === today.getTime() ? ' today' : '');
+        var head = '<div class="meal-dh"><span class="meal-dn">' + names[i] + '</span><span class="meal-dd">' + (d.getMonth() + 1) + '/' + d.getDate() + '</span>' +
+          (e && e.jo ? '<span class="meal-jo">' + esc(e.jo) + '</span>' : '') + '</div>';
+        if (e && e.jo) {
+          any = true;
+          cards += '<div class="' + cls + '" data-names="' + esc(e.names.join(' ')) + '">' + head + '<div class="meal-names">' +
+            e.names.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div></div>';
+        } else if (e && e.note) {
+          any = true;
+          cards += '<div class="' + cls + ' note">' + head + '<div class="meal-empty">' + esc(e.note) + '</div></div>';
+        } else {
+          cards += '<div class="' + cls + ' none">' + head + '<div class="meal-empty">당번표 없음</div></div>';
+        }
+      }
+      var fri = addDays(mon, 4);
+      return '<div class="meal-wk"><p class="meal-wklabel">' + (mon.getMonth() + 1) + '/' + mon.getDate() + ' - ' + (fri.getMonth() + 1) + '/' + fri.getDate() + '</p><div class="meal-grid">' + cards + '</div></div>';
+    }).join('');
+    $('#mealTitle').textContent = title;
+    $('#mealBody').innerHTML = any ? html
+      : '<p class="meal-msg">' + esc(title) + ' 급식 당번표는 아직 없습니다. 11월 당번표는 <b>다음달</b> 보기에서 볼 수 있어요.</p>';
+    applyMealFilter();
+  }
+  function applyMealFilter() {
+    var q = ($('#mealQ').value || '').trim();
+    $$('.meal-day[data-names]').forEach(function (c) {
+      var hit = !!q && c.dataset.names.indexOf(q) >= 0;
+      c.classList.toggle('hit', hit); c.classList.toggle('dim', !!q && !hit);
+      [].forEach.call(c.querySelectorAll('.meal-names span'), function (s) { s.classList.toggle('m', hit && s.textContent.indexOf(q) >= 0); });
+    });
+  }
+  $('#mealQ').addEventListener('input', applyMealFilter);
+
   var EMBED = {
     as: { wrap: 'asWrap', frame: 'asFrame', page: 'afterschool.html', color: '#4f6ef7' },
     mh: { wrap: 'mhWrap', frame: 'mhFrame', page: 'munhae.html', color: '#0ea371' }
@@ -713,7 +771,7 @@
     hideEmbed('as'); hideEmbed('mh'); $('#mealWrap').hidden = true;
     if (which !== 'cal') closeCalendar();
     if (which === 'cal') { state.cal = scope; renderCalendar(); }
-    else if (which === 'meal') { $('#mealScope').textContent = scope === 'month' ? '이번 달' : scope === 'next' ? '다음 달' : '이번 주'; $('#mealWrap').hidden = false; }
+    else if (which === 'meal') { renderMeal(scope); $('#mealWrap').hidden = false; }
     else openEmbed(which, scope);
     CUR = { view: which, scope: scope };
     store(LS.openView, which + ':' + scope);
