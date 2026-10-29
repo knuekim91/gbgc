@@ -685,7 +685,7 @@
   MEAL['2026-11-19'] = { note: '수학능력시험' };
 
   function mealMondayOf(d) { return addDays(midnight(d), -((d.getDay() + 6) % 7)); }
-  function renderMeal(scope) {
+  function mealRange(scope) {
     var today = midnight(new Date()), mondays = [], title;
     if (scope === 'week') { mondays = [mealMondayOf(today)]; title = '이번 주'; }
     else {
@@ -695,6 +695,18 @@
       for (var m = mealMondayOf(new Date(yr, mo, 1)); m <= end; m = addDays(m, 7)) if (m.getMonth() === mo) mondays.push(new Date(m));
       title = (scope === 'next' ? '다음 달 ' : '이번 달 ') + (mo + 1) + '월';
     }
+    return { today: today, mondays: mondays, title: title };
+  }
+  var mealScope = 'week', mealTab = 'duty';
+  function renderMeal(scope) {
+    mealScope = scope;
+    $('#mealQ').hidden = mealTab === 'menu';
+    $('#mealSub').textContent = mealTab === 'menu' ? '매일의 급식 식단' : '급식지도교사 조별 당번';
+    $$('.meal-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.mt === mealTab); });
+    if (mealTab === 'menu') renderMenu(scope); else renderDuty(scope);
+  }
+  function renderDuty(scope) {
+    var rg = mealRange(scope), today = rg.today, mondays = rg.mondays, title = rg.title;
     var any = false, names = ['월', '화', '수', '목', '금'];
     var html = mondays.map(function (mon) {
       var cards = '';
@@ -730,6 +742,38 @@
     });
   }
   $('#mealQ').addEventListener('input', applyMealFilter);
+
+  // ── 식단: 날짜별 목록(칼로리·알레르기 번호 같은 숫자는 빼고 음식 이름만).
+  //    예) addMenu('2026-11-02', ['잡곡밥', '미역국', '제육볶음', '배추김치']);
+  var MENU = {};
+  function addMenu(date, items) { MENU[date] = items; }
+
+  function renderMenu(scope) {
+    var rg = mealRange(scope), today = rg.today, any = false, names = ['월', '화', '수', '목', '금'];
+    var html = rg.mondays.map(function (mon) {
+      var cards = '';
+      for (var i = 0; i < 5; i++) {
+        var d = addDays(mon, i), list = MENU[ymdKey(d)], cls = 'meal-day' + (d.getTime() === today.getTime() ? ' today' : '');
+        var head = '<div class="meal-dh"><span class="meal-dn">' + names[i] + '</span><span class="meal-dd">' + (d.getMonth() + 1) + '/' + d.getDate() + '</span></div>';
+        if (list && list.length) {
+          any = true;
+          cards += '<div class="' + cls + '">' + head + '<ul class="meal-menu">' +
+            list.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul></div>';
+        } else {
+          cards += '<div class="' + cls + ' none">' + head + '<div class="meal-empty">식단 없음</div></div>';
+        }
+      }
+      var fri = addDays(mon, 4);
+      return '<div class="meal-wk"><p class="meal-wklabel">' + (mon.getMonth() + 1) + '/' + mon.getDate() + ' - ' + (fri.getMonth() + 1) + '/' + fri.getDate() + '</p><div class="meal-grid">' + cards + '</div></div>';
+    }).join('');
+    $('#mealTitle').textContent = rg.title;
+    $('#mealBody').innerHTML = any ? html
+      : '<p class="meal-msg">' + esc(rg.title) + ' 식단은 아직 등록되지 않았습니다. 준비되는 대로 안내됩니다.</p>';
+  }
+  $$('.meal-tab').forEach(function (b) {
+    b.addEventListener('click', function () { mealTab = b.dataset.mt; renderMeal(mealScope); });
+  });
+
 
   var EMBED = {
     as: { wrap: 'asWrap', frame: 'asFrame', page: 'afterschool.html', color: '#4f6ef7' },

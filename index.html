@@ -102,7 +102,11 @@
   <section id="mealWrap" class="mealwrap" hidden aria-label="급식 당번">
     <div class="meal-top">
       <span class="meal-title">🍱 <span id="mealTitle">급식 당번</span></span>
-      <span class="meal-sub">급식지도교사 조별 당번</span>
+      <span class="meal-tabs" role="tablist">
+        <button type="button" class="meal-tab on" data-mt="duty">당번표</button>
+        <button type="button" class="meal-tab" data-mt="menu">식단</button>
+      </span>
+      <span class="meal-sub" id="mealSub">급식지도교사 조별 당번</span>
       <input id="mealQ" class="meal-q" type="search" placeholder="이름으로 찾기" autocomplete="off" aria-label="교사 이름으로 당번 찾기">
     </div>
     <div id="mealBody"></div>
