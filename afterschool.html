@@ -70,8 +70,9 @@
   [data-ban="기초A"]   { --bc: #22a35a; }
   [data-ban="기초B"]   { --bc: #0ea5b7; }
   [data-ban="자격B"]   { --bc: #8b5cf6; }
+  [data-ban="기능반"]   { --bc: #d4a017; }
   .as-items li[data-ban], .dt-prog[data-ban] .dt-list li { border-left-color: var(--bc, var(--accent)); }
-  .as-items li[data-ban="자격A"], .as-items li[data-ban="금공반"], .as-items li[data-ban="공무원반"], .as-items li[data-ban="기초A"], .as-items li[data-ban="기초B"], .as-items li[data-ban="자격B"] { background: color-mix(in srgb, var(--bc) 13%, var(--panel-2)); color: color-mix(in srgb, var(--bc) 70%, var(--ink)); }
+  .as-items li[data-ban="자격A"], .as-items li[data-ban="금공반"], .as-items li[data-ban="공무원반"], .as-items li[data-ban="기초A"], .as-items li[data-ban="기초B"], .as-items li[data-ban="자격B"], .as-items li[data-ban="기능반"] { background: color-mix(in srgb, var(--bc) 13%, var(--panel-2)); color: color-mix(in srgb, var(--bc) 70%, var(--ink)); }
   .dt-prog[data-ban] .dt-ban { color: var(--bc, var(--ink)); }
   .dt-prog[data-ban] .dt-gyosi { color: var(--bc, var(--accent)); }
   .dt-teacher { font-weight: 700; }
@@ -158,6 +159,12 @@
       '수': { course: '한국사', teacher: '김명준' }, '목': { course: '영어', teacher: '이지은' },
       '금': { course: '국어', teacher: '이점희' }
     }
+  }, {
+    // 기능반 '디자인연구소'(1팀 1기업 프로젝트) — 운영 계획서의 수업일자에만 표시. 8·9·10교시, 기능실, 허영주.
+    ban: '기능반', info: '기능반(디자인연구소): 8,9,10교시 · 11/9~10, 11/16~17, 11/23~24, 12/14~15, 12/21',
+    gyosi: '8·9·10교시', room: '기능실', off: [], from: new Date(2026, 10, 9), to: new Date(2026, 11, 21),
+    dates: ['11/9', '11/10', '11/16', '11/17', '11/23', '11/24', '12/14', '12/15', '12/21'],
+    days: { '월': { course: '디자인연구소', teacher: '허영주' }, '화': { course: '디자인연구소', teacher: '허영주' } }
   }];
   // 특정 날짜만 강의실이 바뀌는 경우: 날짜 → 반 → { 원래 강의실: 바뀐 강의실 }
   var ROOM_OVR = { '10/30': { '기초B': { '1-1': '3-1', '1-2': '3-2', '1-4': '3-4', '1-5': '3-5', '1-6': '3-6', '1-7': '3-7' } } };
@@ -166,7 +173,7 @@
       COURSES[ex.ban] = COURSES[ex.ban] || {};
       Object.keys(ex.days).forEach(function (yo) {
         var c = ex.days[yo];
-        (COURSES[ex.ban][yo] = COURSES[ex.ban][yo] || []).push({ gyosi: '8·9교시', teacher: c.teacher, course: c.course, room: '1-3', grade: '' });
+        (COURSES[ex.ban][yo] = COURSES[ex.ban][yo] || []).push({ gyosi: ex.gyosi || '8·9교시', teacher: c.teacher, course: c.course, room: ex.room || '1-3', grade: '' });
       });
     });
   }
@@ -248,7 +255,8 @@
         // 다른 부서 운영 강좌(공무원반): 운영 기간 안의 해당 요일에 자동으로 표시합니다.
         EXTRA.forEach(function (ex) {
           var isOff = ex.off.some(function (r) { return dt >= r[0] && dt <= r[1]; });
-          if (ex.days[names[d]] && dt >= ex.from && dt <= ex.to && !isOff && items.indexOf(ex.ban) < 0) items.push(ex.ban);
+          var inPlan = ex.dates ? ex.dates.indexOf((dt.getMonth() + 1) + '/' + dt.getDate()) >= 0 : (dt >= ex.from && dt <= ex.to && !isOff);
+          if (ex.days[names[d]] && inPlan && items.indexOf(ex.ban) < 0) items.push(ex.ban);
         });
         out.push({ name: names[d], date: (dt.getMonth() + 1) + '/' + dt.getDate(), isToday: dt.getTime() === today.getTime(), items: items });
       }
