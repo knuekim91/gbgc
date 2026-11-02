@@ -71,8 +71,9 @@
   [data-ban="기초B"]   { --bc: #0ea5b7; }
   [data-ban="자격B"]   { --bc: #8b5cf6; }
   [data-ban="기능반"]   { --bc: #d4a017; }
+  [data-ban="기술사관"] { --bc: #65a30d; }
   .as-items li[data-ban], .dt-prog[data-ban] .dt-list li { border-left-color: var(--bc, var(--accent)); }
-  .as-items li[data-ban="자격A"], .as-items li[data-ban="금공반"], .as-items li[data-ban="공무원반"], .as-items li[data-ban="기초A"], .as-items li[data-ban="기초B"], .as-items li[data-ban="자격B"], .as-items li[data-ban="기능반"] { background: color-mix(in srgb, var(--bc) 13%, var(--panel-2)); color: color-mix(in srgb, var(--bc) 70%, var(--ink)); }
+  .as-items li[data-ban="자격A"], .as-items li[data-ban="금공반"], .as-items li[data-ban="공무원반"], .as-items li[data-ban="기초A"], .as-items li[data-ban="기초B"], .as-items li[data-ban="자격B"], .as-items li[data-ban="기능반"], .as-items li[data-ban="기술사관"] { background: color-mix(in srgb, var(--bc) 13%, var(--panel-2)); color: color-mix(in srgb, var(--bc) 70%, var(--ink)); }
   .dt-prog[data-ban] .dt-ban { color: var(--bc, var(--ink)); }
   .dt-prog[data-ban] .dt-gyosi { color: var(--bc, var(--accent)); }
   .dt-teacher { font-weight: 700; }
@@ -165,11 +166,62 @@
     gyosi: '8·9·10교시', room: '기능실', off: [], from: new Date(2026, 10, 9), to: new Date(2026, 11, 21),
     dates: ['11/9', '11/10', '11/16', '11/17', '11/23', '11/24', '12/14', '12/15', '12/21'],
     days: { '월': { course: '디자인연구소', teacher: '허영주' }, '화': { course: '디자인연구소', teacher: '허영주' } }
+  }, {
+    // 기술사관 육성사업(반도체소프트웨어) — 강의운영계획서의 31일. 날짜마다 강사·시수가 달라 날짜별로 둔다.
+    // 3차시 날=8·9·10교시, 4차시 날=8·9·10·11교시. 장소: 디지털디자인실.
+    ban: '기술사관', info: '기술사관: 3차시 8,9,10교시 · 4차시 8,9,10,11교시 (월·화·금, ~11/30)',
+    room: '디지털디자인실', off: [], from: new Date(2026, 8, 14), to: new Date(2026, 10, 30),
+    days: { '월': 1, '화': 1, '수': 1, '목': 1, '금': 1 },
+    byDate: {
+      '9/14': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '소프트웨어 융합콘텐츠 이해' },
+      '9/15': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '반도체 산업과 소프트웨어' },
+      '9/18': { gyosi: '8·9·10교시', teacher: '김경수', course: '디지털 콘텐츠 기획' },
+      '9/21': { gyosi: '8·9·10·11교시', teacher: '이성열', course: 'Photoshop 화면 구성' },
+      '9/22': { gyosi: '8·9·10·11교시', teacher: '이성열', course: 'Photoshop 기본 도구' },
+      '9/28': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '이미지 보정' },
+      '9/29': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '선택 영역 활용' },
+      '10/2': { gyosi: '8·9·10교시', teacher: '김경수', course: '이미지 합성' },
+      '10/6': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '문자·타이포그래피' },
+      '10/12': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '사진 리터칭' },
+      '10/13': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '제품 이미지 편집' },
+      '10/16': { gyosi: '8·9·10교시', teacher: '김경수', course: '인포그래픽 기초' },
+      '10/19': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '반도체 장비 콘텐츠' },
+      '10/20': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '검사·품질 콘텐츠' },
+      '10/23': { gyosi: '8·9·10교시', teacher: '김경수', course: 'Photoshop 프로젝트' },
+      '10/26': { gyosi: '8·9·10·11교시', teacher: '이성열', course: 'AI 이미지 생성' },
+      '10/27': { gyosi: '8·9·10·11교시', teacher: '이성열', course: 'AI 프롬프트 활용' },
+      '10/30': { gyosi: '8·9·10교시', teacher: '김경수', course: 'AI+Photoshop 콘텐츠' },
+      '11/2': { gyosi: '8·9·10·11교시', teacher: '이성열', course: 'Python 데이터 처리' },
+      '11/3': { gyosi: '8·9·10교시', teacher: '채경인', course: 'Excel 기초' },
+      '11/6': { gyosi: '8·9·10교시', teacher: '김경수', course: '반도체 검사 데이터' },
+      '11/9': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '데이터 콘텐츠 제작' },
+      '11/10': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '3D 콘텐츠 기초' },
+      '11/13': { gyosi: '8·9·10교시', teacher: '김경수', course: '반도체 3D 콘텐츠' },
+      '11/16': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '디지털 콘텐츠 제작' },
+      '11/17': { gyosi: '8·9·10·11교시', teacher: '이성열', course: 'Photoshop 포트폴리오' },
+      '11/20': { gyosi: '8·9·10교시', teacher: '김경수', course: '취업용 콘텐츠 제작' },
+      '11/23': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '포트폴리오 심화' },
+      '11/24': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '면접 실무' },
+      '11/27': { gyosi: '8·9·10교시', teacher: '김경수', course: '최종 프로젝트' },
+      '11/30': { gyosi: '8·9·10·11교시', teacher: '이성열', course: '결과 발표' }
+    }
   }];
   // 특정 날짜만 강의실이 바뀌는 경우: 날짜 → 반 → { 원래 강의실: 바뀐 강의실 }
   var ROOM_OVR = { '10/30': { '기초B': { '1-1': '3-1', '1-2': '3-2', '1-4': '3-4', '1-5': '3-5', '1-6': '3-6', '1-7': '3-7' } } };
+  var DATED = {};   // 날짜별 강좌(반 → 'M/D' → [강좌])
+  EXTRA.forEach(function (ex) { if (ex.byDate) ex.dates = Object.keys(ex.byDate); });
   function addExtraCourses() {
+    DATED = {};
     EXTRA.forEach(function (ex) {
+      if (ex.byDate) {
+        COURSES[ex.ban] = COURSES[ex.ban] || {};
+        DATED[ex.ban] = {};
+        Object.keys(ex.byDate).forEach(function (k) {
+          var c = ex.byDate[k];
+          DATED[ex.ban][k] = [{ gyosi: c.gyosi, teacher: c.teacher, course: c.course, room: ex.room, grade: '' }];
+        });
+        return;
+      }
       COURSES[ex.ban] = COURSES[ex.ban] || {};
       Object.keys(ex.days).forEach(function (yo) {
         var c = ex.days[yo];
@@ -302,7 +354,7 @@
     var progs = el.dataset.progs.split('|'), date = el.dataset.date, yo = el.dataset.yo;
     var html = '<h2>📌 ' + esc(date) + ' (' + esc(yo) + ') 방과후 강좌</h2>', any = false;
     progs.forEach(function (p) {
-      var list = (COURSES[p] && COURSES[p][yo]) || [];
+      var list = (DATED[p] && DATED[p][date]) || (COURSES[p] && COURSES[p][yo]) || [];
       if (!list.length) return;
       any = true;
       html += '<div class="dt-prog" data-ban="' + esc(p) + '"><div class="dt-ban">' + esc(p) + '</div><ul class="dt-list">' +
