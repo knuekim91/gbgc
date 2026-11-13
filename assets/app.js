@@ -1854,6 +1854,11 @@
   function applyTheme(t) {
     if (t) document.documentElement.setAttribute('data-theme', t);
     else document.documentElement.removeAttribute('data-theme');
+    // 방과후·문해력 패널(iframe)도 같은 밝기로 맞춥니다.
+    ['asFrame', 'mhFrame'].forEach(function (id) {
+      var f = document.getElementById(id);
+      try { if (f && f.contentWindow) f.contentWindow.postMessage({ type: 'theme', theme: t || null }, '*'); } catch (e) {}
+    });
   }
   applyTheme(store(LS.theme));
   $('#themeBtn').addEventListener('click', function () {

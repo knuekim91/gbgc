@@ -59,6 +59,11 @@
 <body>
 <script>
   try { var t = localStorage.getItem('gbgc.theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+
+  // 허브에서 밝기(◐)를 바꾸면 패널도 곧바로 따라갑니다.
+  function setThemeAttr(t) { if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme'); }
+  window.addEventListener('message', function (e) { var d = e.data || {}; if (d && d.type === 'theme') setThemeAttr(d.theme); });
+  window.addEventListener('storage', function (e) { if (e.key === 'gbgc.theme') setThemeAttr(e.newValue); });
   var EMBED = location.search.indexOf('embed=1') >= 0;
   if (EMBED) document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('embed'); });
 </script>
