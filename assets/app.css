@@ -1087,6 +1087,7 @@ input:focus, select:focus, textarea:focus {
 }
 .ql-munhae { --ql: #0ea371; }
 .ql-promo  { --ql: #e8830c; }
+.ql-after  { --ql: #6a4bc4; }
 @media (max-width: 480px) { .qlink { padding: 5px 10px; font-size: 12px; } }
 
 /* 급식 당번 — 네 번째 바(코랄). 데이터가 생기기 전에는 안내 문구만 보입니다. */
