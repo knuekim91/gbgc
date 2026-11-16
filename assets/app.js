@@ -613,12 +613,24 @@
     return deadlineTag(l.deadline);
   }
 
+  // 업무 캘린더의 기준 날짜. ‹ › 로 한 주·한 달씩 옮기고, '오늘'로 돌아옵니다.
+  var calAnchor = null;
+  function calBase() { return calAnchor ? midnight(calAnchor) : midnight(new Date()); }
+  function calShift(dir) {
+    var b = calBase();
+    if (state.cal === 'month') calAnchor = new Date(b.getFullYear(), b.getMonth() + dir, 1);
+    else calAnchor = addDays(b, 7 * dir);
+    renderCalendar();
+  }
+  function calToday() { calAnchor = null; renderCalendar(); }
+
   function renderCalendar() {
-    var sc = state.cal;                 // '' | 'week' | 'month' | 'next'
+    var sc = state.cal;                 // '' | 'week' | 'month'
     $('#calendar').hidden = !sc;
     if (!sc) return;
 
     var today = midnight(new Date());
+    var base = calBase();
 
     // 걸러 놓은 목록을 그날 카드에 모읍니다. 여러 날 업무는 시작~마감 사이 '모든 날'에 표시합니다.
     var byDay = {};                     // ymd → [업무...]
@@ -634,18 +646,16 @@
     // 보여 줄 주(일요일 시작)들과 머리말을 정합니다.
     var weeksArr = [], title, inMonth = null;
     if (sc === 'week') {
-      var ws = addDays(today, -today.getDay());
+      var ws = addDays(base, -base.getDay());
       weeksArr.push(ws);
       var we = addDays(ws, 6);
-      title = (ws.getMonth() + 1) + '/' + ws.getDate() + ' – ' + (we.getMonth() + 1) + '/' + we.getDate();
+      title = (ws.getFullYear()) + '년 ' + (ws.getMonth() + 1) + '/' + ws.getDate() + ' – ' + (we.getMonth() + 1) + '/' + we.getDate();
     } else {
-      var baseMo = today.getMonth() + (sc === 'next' ? 1 : 0);
-      var mo = ((baseMo % 12) + 12) % 12;
-      var yr = today.getFullYear() + Math.floor(baseMo / 12);
+      var mo = base.getMonth(), yr = base.getFullYear();
       inMonth = mo;
       var first = new Date(yr, mo, 1), mend = new Date(yr, mo + 1, 0);
       for (var d0 = addDays(first, -first.getDay()); d0 <= mend; d0 = addDays(d0, 7)) weeksArr.push(new Date(d0));
-      title = (sc === 'next' ? '다음 달 ' : '이번 달 ') + (mo + 1) + '월';
+      title = yr + '년 ' + (mo + 1) + '월';
     }
 
     var head =
@@ -654,7 +664,11 @@
         '<div class="cal-tools">' +
           '<button type="button" class="calpick' + (sc === 'week' ? ' on' : '') + '" data-view="cal" data-scope="week">주</button>' +
           '<button type="button" class="calpick' + (sc === 'month' ? ' on' : '') + '" data-view="cal" data-scope="month">월</button>' +
-          '<button type="button" class="calpick' + (sc === 'next' ? ' on' : '') + '" data-view="cal" data-scope="next">다음달</button>' +
+          '<span class="cal-nav">' +
+            '<button type="button" class="calnav" data-calnav="-1" aria-label="이전">‹</button>' +
+            '<button type="button" class="calnav today" data-calnav="0">오늘</button>' +
+            '<button type="button" class="calnav" data-calnav="1" aria-label="다음">›</button>' +
+          '</span>' +
         '</div>' +
       '</div>';
 
@@ -884,6 +898,13 @@
       if (EMBED[p[0]] || p[0] === 'cal' || p[0] === 'meal') openView(p[0], s2);
     }
   }
+
+  $('#calendar').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-calnav]');
+    if (!b) return;
+    var v = Number(b.dataset.calnav);
+    if (v === 0) calToday(); else calShift(v);
+  });
 
   // 주/월 버튼(바 + 캘린더 머리말). 머리말의 '숨기기'는 data-scope=hide.
   document.addEventListener('click', function (e) {

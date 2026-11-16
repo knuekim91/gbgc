@@ -1158,3 +1158,14 @@ input:focus, select:focus, textarea:focus {
   color: var(--ink-2); background: var(--panel-2); border: 1px dashed var(--line); border-radius: 9px;
 }
 .arch-more:hover { color: var(--accent); border-color: var(--accent); }
+
+/* 업무 캘린더 ‹ 오늘 › 이동 */
+.cal-nav { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
+.calnav {
+  cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; line-height: 1;
+  min-width: 30px; height: 28px; padding: 0 9px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink-2);
+  transition: background .14s, color .14s, border-color .14s;
+}
+.calnav:hover { border-color: var(--vc, var(--accent)); color: var(--vc, var(--accent)); }
+.calnav.today { font-size: 12px; min-width: 0; }
