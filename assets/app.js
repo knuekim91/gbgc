@@ -713,16 +713,21 @@
   ].forEach(function (r) { MEAL[r[0]] = { jo: r[1], names: r[2].split(',') }; });
   MEAL['2026-11-19'] = { note: '수학능력시험' };
 
+  // 방과후·문해력·급식 당번의 기준 날짜. ‹ › 로 옮기고 '오늘'(null)로 돌아옵니다.
+  var VANCHOR = { as: null, mh: null, meal: null };
+  function vBase(v) { return VANCHOR[v] ? midnight(VANCHOR[v]) : midnight(new Date()); }
+  function vAnchorStr(v) { return VANCHOR[v] ? ymdKey(VANCHOR[v]) : ''; }
   function mealMondayOf(d) { return addDays(midnight(d), -((d.getDay() + 6) % 7)); }
   function mealRange(scope) {
-    var today = midnight(new Date()), mondays = [], title;
-    if (scope === 'week') { mondays = [mealMondayOf(today)]; title = '이번 주'; }
-    else {
-      var base = today.getMonth() + (scope === 'next' ? 1 : 0);
-      var yr = today.getFullYear() + Math.floor(base / 12), mo = ((base % 12) + 12) % 12;
-      var end = new Date(yr, mo + 1, 0);
+    var today = midnight(new Date()), base = vBase('meal'), mondays = [], title;
+    if (scope === 'week') {
+      var mon = mealMondayOf(base), fri = addDays(mon, 4);
+      mondays = [mon];
+      title = (mon.getMonth() + 1) + '/' + mon.getDate() + ' – ' + (fri.getMonth() + 1) + '/' + fri.getDate();
+    } else {
+      var yr = base.getFullYear(), mo = base.getMonth(), end = new Date(yr, mo + 1, 0);
       for (var m = mealMondayOf(new Date(yr, mo, 1)); m <= end; m = addDays(m, 7)) if (m.getMonth() === mo) mondays.push(new Date(m));
-      title = (scope === 'next' ? '다음 달 ' : '이번 달 ') + (mo + 1) + '월';
+      title = yr + '년 ' + (mo + 1) + '월';
     }
     return { today: today, mondays: mondays, title: title };
   }
@@ -847,9 +852,9 @@
 
   function hideEmbed(which) { $('#' + EMBED[which].wrap).hidden = true; }
   function openEmbed(which, scope) {
-    var m = EMBED[which], frame = $('#' + m.frame);
-    if (!frame.getAttribute('src')) frame.setAttribute('src', m.page + '?embed=1&scope=' + scope + '&c=' + encodeURIComponent(m.color));
-    else if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'setScope', scope: scope }, '*');
+    var m = EMBED[which], frame = $('#' + m.frame), anchor = vAnchorStr(which);
+    if (!frame.getAttribute('src')) frame.setAttribute('src', m.page + '?embed=1&scope=' + scope + '&anchor=' + anchor + '&c=' + encodeURIComponent(m.color));
+    else if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'setScope', scope: scope, anchor: anchor }, '*');
     $('#' + m.wrap).hidden = false;
   }
   function closeCalendar() { if (state.cal) { state.cal = ''; renderCalendar(); } }
@@ -894,10 +899,24 @@
     var ov = store(LS.openView);
     if (ov) {
       var p = ov.split(':');
-      var s2 = (p[1] === 'month' || p[1] === 'next') ? p[1] : 'week';
+      var s2 = p[1] === 'month' ? 'month' : 'week';
       if (EMBED[p[0]] || p[0] === 'cal' || p[0] === 'meal') openView(p[0], s2);
     }
   }
+
+  document.addEventListener('click', function (e) {
+    var nb = e.target.closest('[data-vnav]');
+    if (!nb) return;
+    var v = nb.dataset.vnav, dir = Number(nb.dataset.dir);
+    if (dir === 0) VANCHOR[v] = null;
+    else {
+      var sc = CUR.view === v ? CUR.scope : 'week', b = vBase(v);
+      VANCHOR[v] = sc === 'month' ? new Date(b.getFullYear(), b.getMonth() + dir, 1) : addDays(b, 7 * dir);
+    }
+    if (CUR.view === v) {
+      if (v === 'meal') renderMeal(CUR.scope); else openEmbed(v, CUR.scope);
+    } else openView(v, 'week');
+  });
 
   $('#calendar').addEventListener('click', function (e) {
     var b = e.target.closest('[data-calnav]');

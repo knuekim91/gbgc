@@ -94,7 +94,9 @@
 
   var scope = 'week';
   var _ps = new URLSearchParams(location.search).get('scope');
-  if (_ps === 'month' || _ps === 'week' || _ps === 'next') scope = _ps;
+  if (_ps === 'month' || _ps === 'week' || _ps === 'next') scope = _ps === 'next' ? 'month' : _ps;
+  function parseAnchor(v) { var r = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return r ? new Date(+r[1], +r[2] - 1, +r[3]) : null; }
+  var anchor = parseAnchor(new URLSearchParams(location.search).get('anchor'));
   // 허브에서 넘겨준 색(c)으로 강조색을 맞춥니다(방과후·문해력 각각 다른 색).
   var _pc = new URLSearchParams(location.search).get('c');
   if (_pc && /^#?[0-9a-fA-F]{6}$/.test(_pc)) document.documentElement.style.setProperty('--accent', _pc.charAt(0) === '#' ? _pc : '#' + _pc);
@@ -149,19 +151,19 @@
     var now=new Date();
     var today=midnight(new Date(YEAR, now.getMonth(), now.getDate()));
 
-    if (scope==='month' || scope==='next'){
-      var baseMo=today.getMonth()+(scope==='next'?1:0);
-      var yr=YEAR+Math.floor(baseMo/12);
-      var mo=((baseMo%12)+12)%12;
-      // 대상 달에 월요일이 드는 주들
-      var mend=new Date(yr,mo+1,0), mon=mondayOf(new Date(yr,mo,1));
+    var base = anchor ? midnight(anchor) : today;
+    var inYear = base.getFullYear() === YEAR;   // 진도표는 해당 학년도(YEAR) 자료만 있습니다.
+    if (scope==='month'){
+      var mo=base.getMonth();
+      var mend=new Date(YEAR,mo+1,0), mon=mondayOf(new Date(YEAR,mo,1));
       var weeks=[];
       while (mon<=mend){
-        if (mon.getFullYear()===yr && mon.getMonth()===mo) weeks.push(new Date(mon));
+        if (mon.getFullYear()===YEAR && mon.getMonth()===mo) weeks.push(new Date(mon));
         mon=addDays(mon,7);
       }
-      lab.innerHTML=(scope==='next'?'다음 달 ':'이번 달 ')+'<b>'+(mo+1)+'월</b> · '+weeks.length+'주';
-      view.innerHTML=weeks.map(function(wm){
+      lab.innerHTML='<b>'+YEAR+'년 '+(mo+1)+'월</b> · '+weeks.length+'주';
+      view.innerHTML = !inYear || !weeks.length ? '<div class="as-empty">이 기간 진도표 기록이 없습니다.</div>'
+        : weeks.map(function(wm){
         var fri=addDays(wm,4);
         var nowWk = today>=wm && today<=addDays(wm,6);
         return '<div class="as-wk'+(nowWk?' now':'')+'">'+
@@ -169,9 +171,9 @@
           weekGrid(wm, today)+'</div>';
       }).join('');
     } else {
-      var m0=mondayOf(today), f0=addDays(m0,4);
-      lab.innerHTML='이번 주 <b>'+(m0.getMonth()+1)+'/'+m0.getDate()+' - '+(f0.getMonth()+1)+'/'+f0.getDate()+'</b>';
-      view.innerHTML=weekGrid(m0, today);
+      var m0=mondayOf(base), f0=addDays(m0,4);
+      lab.innerHTML='주 <b>'+(m0.getMonth()+1)+'/'+m0.getDate()+' - '+(f0.getMonth()+1)+'/'+f0.getDate()+'</b>';
+      view.innerHTML = inYear ? weekGrid(m0, today) : '<div class="as-empty">이 기간 진도표 기록이 없습니다.</div>';
     }
     lab.hidden=false; view.hidden=false; $('#noteBox').hidden=false; $('#foot').hidden=false;
     $('#foot').textContent='학교 문해력 진도표 달력에서 만든 일정입니다.';
@@ -191,14 +193,14 @@
 
   document.querySelector('.as-tabs').addEventListener('click', function(e){
     var b=e.target.closest('.as-tab'); if(!b||b.dataset.scope===scope) return;
-    scope=b.dataset.scope; try{ localStorage.setItem('gbgc.mh.scope',scope); }catch(e2){}
+    scope=b.dataset.scope; anchor=null; try{ localStorage.setItem('gbgc.mh.scope',scope); }catch(e2){}
     syncTabs(); render();
   });
 
   window.addEventListener('message', function (e) {
     var d = e.data || {};
     if (d && d.type === 'setScope' && (d.scope === 'week' || d.scope === 'month' || d.scope === 'next')) {
-      scope = d.scope; syncTabs();
+      scope = d.scope === 'next' ? 'month' : d.scope; anchor = parseAnchor(d.anchor); syncTabs();
       if (MAP) render(); else start();
     }
   });

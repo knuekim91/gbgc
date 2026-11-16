@@ -1104,7 +1104,7 @@ input:focus, select:focus, textarea:focus {
   .vbar { padding: 8px 9px; gap: 6px; }
   .vpk { padding: 3px 8px; }
 }
-@media (max-width: 1180px) {
+@media (max-width: 1400px) {
   .viewrow { grid-template-columns: repeat(2, 1fr); }
   .vbar.open::before, .vbar.open::after { display: none; }  /* 2줄이면 연결선이 패널을 가리키지 않음 */
 }

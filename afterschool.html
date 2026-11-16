@@ -138,7 +138,10 @@
 
   var scope = 'week';
   var _ps = new URLSearchParams(location.search).get('scope');
-  if (_ps === 'month' || _ps === 'week' || _ps === 'next') scope = _ps;
+  if (_ps === 'month' || _ps === 'week' || _ps === 'next') scope = _ps === 'next' ? 'month' : _ps;
+  // 기준 날짜(anchor): 허브의 ‹ › 로 옮긴 날짜. 없으면 오늘.
+  function parseAnchor(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+  var anchor = parseAnchor(new URLSearchParams(location.search).get('anchor'));
   // 허브에서 넘겨준 색(c)으로 강조색을 맞춥니다(방과후·문해력 각각 다른 색).
   var _pc = new URLSearchParams(location.search).get('c');
   if (_pc && /^#?[0-9a-fA-F]{6}$/.test(_pc)) document.documentElement.style.setProperty('--accent', _pc.charAt(0) === '#' ? _pc : '#' + _pc);
@@ -292,7 +295,8 @@
     var g = GRID, hr = -1;
     for (var i = 0; i < g.length; i++) { if (g[i][2] === '월' && g[i][3] === '화') { hr = i; break; } }
     if (hr < 0) throw new Error('요일 표를 찾지 못했습니다.');
-    var year = new Date().getFullYear();
+    var base = anchor ? midnight(anchor) : midnight(new Date());
+    var year = base.getFullYear();
     var weeks = [];
     for (var r = hr + 1; r < g.length; r++) {
       var label = String(g[r][1] || '').replace(/\s+/g, ' ').trim();
@@ -320,17 +324,19 @@
       return out;
     }
     var note = String((g[0] && g[0][1]) || '').replace(/\r/g, '').trim();
-    if (sc === 'month' || sc === 'next') {
-      var baseMo = today.getMonth() + (sc === 'next' ? 1 : 0);
-      var mo = ((baseMo % 12) + 12) % 12;
+    if (sc === 'month') {
+      var mo = base.getMonth();
       var list = weeks.filter(function (w) { return w.mon.getMonth() === mo; });
-      return { scope: 'month', next: sc === 'next', month: mo + 1, note: note,
+      return { scope: 'month', title: base.getFullYear() + '년 ' + (mo + 1) + '월', note: note,
         weeks: list.map(function (w) { return { label: w.label, days: days(w), isThisWeek: sameWeek(w.mon) }; }) };
     }
+    var wmon = addD(base, -((base.getDay() + 6) % 7));
     var pick = null;
-    for (var k = 0; k < weeks.length; k++) { if (sameWeek(weeks[k].mon)) { pick = weeks[k]; break; } }
-    if (!pick) { for (var k2 = 0; k2 < weeks.length; k2++) { if (weeks[k2].mon <= today && (!pick || weeks[k2].mon > pick.mon)) pick = weeks[k2]; } }
-    if (!pick) pick = weeks[0];
+    for (var k = 0; k < weeks.length; k++) { if (weeks[k].mon.getTime() === wmon.getTime()) { pick = weeks[k]; break; } }
+    if (!pick) {
+      var fri = addD(wmon, 4);
+      return { scope: 'week', empty: true, week: (wmon.getMonth() + 1) + '.' + wmon.getDate() + ' - ' + (fri.getMonth() + 1) + '.' + fri.getDate(), note: note };
+    }
     return { scope: 'week', week: pick.label, days: days(pick), note: note };
   }
 
@@ -387,16 +393,16 @@
     $('#state').hidden = true;
     var lab = $('#scopeLabel'), view = $('#view');
     if (d.scope === 'month') {
-      lab.innerHTML = (d.next ? '다음 달 ' : '이번 달 ') + '<b>' + esc(d.month) + '월</b> · ' + d.weeks.length + '주';
+      lab.innerHTML = '<b>' + esc(d.title) + '</b> · ' + d.weeks.length + '주';
       view.innerHTML = d.weeks.length
         ? d.weeks.map(function (w) {
             return '<div class="as-wk' + (w.isThisWeek ? ' now' : '') + '">' +
               '<p class="as-wklabel">' + esc(w.label) + '</p>' + dayCardsHtml(w.days) + '</div>';
           }).join('')
-        : '<div class="as-empty">' + (d.next ? '다음 달' : '이번 달') + ' 일정이 없습니다.</div>';
+        : '<div class="as-empty">이 기간 일정이 없습니다.</div>';
     } else {
-      lab.innerHTML = '이번 주 <b>' + esc(d.week) + '</b>';
-      view.innerHTML = dayCardsHtml(d.days);
+      lab.innerHTML = '주 <b>' + esc(d.week) + '</b>';
+      view.innerHTML = d.empty ? '<div class="as-empty">이 주 방과후 기록이 없습니다.</div>' : dayCardsHtml(d.days);
     }
     lab.hidden = false; view.hidden = false;
     // 새로 그릴 때 상세는 접고(선택 해제), 운영시간안내만 보입니다.
@@ -452,7 +458,7 @@
 
   document.querySelector('.as-tabs').addEventListener('click', function (e) {
     var b = e.target.closest('.as-tab'); if (!b || b.dataset.scope === scope) return;
-    scope = b.dataset.scope;
+    scope = b.dataset.scope; anchor = null;
     try { localStorage.setItem('gbgc.as.scope', scope); } catch (e2) {}
     if (GRID) renderScope(); else load();
   });
@@ -460,7 +466,8 @@
   window.addEventListener('message', function (e) {
     var d = e.data || {};
     if (d && d.type === 'setScope' && (d.scope === 'week' || d.scope === 'month' || d.scope === 'next')) {
-      scope = d.scope;
+      scope = d.scope === 'next' ? 'month' : d.scope;
+      anchor = parseAnchor(d.anchor);
       if (GRID) renderScope(); else load();
     }
   });
